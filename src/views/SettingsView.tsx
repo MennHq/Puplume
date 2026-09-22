@@ -20,12 +20,31 @@ interface SettingsViewProps {
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ puppy, onResetData }) => {
-  const [pottyAlerts, setPottyAlerts] = useState(true);
-  const [feedingAlerts, setFeedingAlerts] = useState(true);
-  const [trainingAlerts, setTrainingAlerts] = useState(true);
-  const [medAlerts, setMedAlerts] = useState(true);
-  const [units, setUnits] = useState<'imperial' | 'metric'>('imperial');
+  const initialSettings = storage.getSettings();
+  const [pottyAlerts, setPottyAlerts] = useState(initialSettings.pottyAlerts);
+  const [feedingAlerts, setFeedingAlerts] = useState(initialSettings.feedingAlerts);
+  const [trainingAlerts, setTrainingAlerts] = useState(initialSettings.trainingAlerts);
+  const [medAlerts, setMedAlerts] = useState(initialSettings.medAlerts);
+  const [units, setUnits] = useState<'imperial' | 'metric'>(initialSettings.units);
   const [isSaved, setIsSaved] = useState(false);
+  const [backupStatus, setBackupStatus] = useState<string | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  React.useEffect(() => {
+    return storage.subscribe(() => {
+      const s = storage.getSettings();
+      setPottyAlerts(s.pottyAlerts);
+      setFeedingAlerts(s.feedingAlerts);
+      setTrainingAlerts(s.trainingAlerts);
+      setMedAlerts(s.medAlerts);
+      setUnits(s.units);
+    });
+  }, []);
+
+  const showStatus = (msg: string) => {
+    setBackupStatus(msg);
+    setTimeout(() => setBackupStatus(null), 3500);
+  };
 
   const handleExportJSON = () => {
     const backup = {
@@ -50,6 +69,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ puppy, onResetData }
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    showStatus('Backup exported successfully!');
   };
 
   const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,10 +80,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ puppy, onResetData }
           const data = JSON.parse(event.target?.result as string);
           if (data.puppy) storage.savePuppy(data.puppy);
           if (data.tasks) storage.saveTasks(data.tasks);
-          alert('PupLume data restored successfully!');
-          window.location.reload();
+          showStatus('PupLume data restored successfully!');
         } catch (err) {
-          alert('Invalid JSON backup file.');
+          showStatus('Error: Invalid JSON backup file.');
         }
       };
       reader.readAsText(e.target.files[0]);
@@ -71,9 +90,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ puppy, onResetData }
   };
 
   const handleSaveSettings = () => {
+    storage.saveSettings({
+      pottyAlerts,
+      feedingAlerts,
+      trainingAlerts,
+      medAlerts,
+      units,
+      activePuppyId: puppy.id,
+    });
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
   };
+
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-24">
@@ -184,19 +212,47 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ puppy, onResetData }
             </div>
           </label>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (confirm(`Reset all records to default starter data for ${puppy.name}?`)) {
-                onResetData();
-              }
-            }}
-            leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
-          >
-            Reset Starter Data
-          </Button>
+          {showResetConfirm ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-rose-700">Reset all records?</span>
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-rose-600 hover:bg-rose-700 text-white"
+                onClick={() => {
+                  setShowResetConfirm(false);
+                  onResetData();
+                  showStatus('Reset to starter data complete.');
+                }}
+              >
+                Yes, Reset
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowResetConfirm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowResetConfirm(true)}
+              leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+            >
+              Reset Starter Data
+            </Button>
+          )}
         </div>
+
+        {backupStatus && (
+          <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs font-bold text-amber-900 flex items-center gap-2">
+            <Check className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>{backupStatus}</span>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end">

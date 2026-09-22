@@ -35,6 +35,15 @@ export const HealthCenterView: React.FC<HealthCenterViewProps> = ({ puppy }) => 
   const [medications, setMedications] = useState<MedicationRecord[]>(storage.getMedications());
   const [appointments, setAppointments] = useState<VetAppointment[]>(storage.getAppointments());
 
+  React.useEffect(() => {
+    return storage.subscribe(() => {
+      setVaccinations([...storage.getVaccinations()]);
+      setMedications([...storage.getMedications()]);
+      setAppointments([...storage.getAppointments()]);
+    });
+  }, []);
+
+
   // Modals
   const [isAddVacOpen, setIsAddVacOpen] = useState(false);
   const [isAddMedOpen, setIsAddMedOpen] = useState(false);

@@ -46,6 +46,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [activeTaskModal, setActiveTaskModal] = useState<TaskItem | null>(null);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
+  React.useEffect(() => {
+    return storage.subscribe(() => {
+      setTasks([...storage.getTasks()]);
+    });
+  }, []);
+
+
   // New task form
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskCategory, setNewTaskCategory] = useState<any>('training');

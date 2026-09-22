@@ -18,7 +18,8 @@ export const InstallPWABanner: React.FC = () => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
       (window.navigator as any).standalone === true;
 
-    if (isStandalone) return;
+    // Don't show inside iframe or if standalone
+    if (window.self !== window.top || isStandalone) return;
 
     // Detect iOS
     const userAgent = window.navigator.userAgent.toLowerCase();
@@ -32,15 +33,6 @@ export const InstallPWABanner: React.FC = () => {
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Show prompt after 4 seconds on mobile if not already dismissed
-    const dismissed = localStorage.getItem('puplume_pwa_dismissed');
-    if (!dismissed) {
-      const timer = setTimeout(() => {
-        setShowBanner(true);
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);

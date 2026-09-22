@@ -103,7 +103,87 @@ export const updatePuppy = mutation({
   },
 });
 
+export const savePuppy = mutation({
+  args: {
+    id: v.optional(v.string()),
+    name: v.string(),
+    breed: v.string(),
+    birthDate: v.string(),
+    sex: v.string(),
+    weightLbs: v.number(),
+    photoUrl: v.string(),
+    temperament: v.string(),
+    dietaryRestrictions: v.optional(v.string()),
+    microchipNumber: v.optional(v.string()),
+    allergies: v.optional(v.string()),
+    vetClinic: v.optional(v.string()),
+    vetPhone: v.optional(v.string()),
+    vetName: v.optional(v.string()),
+    insuranceProvider: v.optional(v.string()),
+    insurancePolicyNumber: v.optional(v.string()),
+    favoriteTreat: v.optional(v.string()),
+    adoptionDate: v.optional(v.string()),
+    createdAt: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Authentication required");
+    }
+
+    // Try finding existing puppy by ID first, then by name
+    let existing = null;
+    if (args.id) {
+      const normId = ctx.db.normalizeId("puppies", args.id);
+      if (normId) {
+        const p = await ctx.db.get(normId);
+        if (p && p.userId === identity.subject) {
+          existing = p;
+        }
+      }
+    }
+
+    if (!existing) {
+      existing = await ctx.db
+        .query("puppies")
+        .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+        .filter((q) => q.eq(q.field("name"), args.name))
+        .first();
+    }
+
+    const data = {
+      userId: identity.subject,
+      name: args.name,
+      breed: args.breed,
+      birthDate: args.birthDate,
+      sex: args.sex,
+      weightLbs: args.weightLbs,
+      photoUrl: args.photoUrl,
+      temperament: args.temperament,
+      dietaryRestrictions: args.dietaryRestrictions,
+      microchipNumber: args.microchipNumber,
+      allergies: args.allergies,
+      vetClinic: args.vetClinic,
+      vetPhone: args.vetPhone,
+      vetName: args.vetName,
+      insuranceProvider: args.insuranceProvider,
+      insurancePolicyNumber: args.insurancePolicyNumber,
+      favoriteTreat: args.favoriteTreat,
+      adoptionDate: args.adoptionDate,
+      createdAt: args.createdAt || new Date().toISOString(),
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, data);
+      return existing._id;
+    }
+
+    return await ctx.db.insert("puppies", data);
+  },
+});
+
 export const deletePuppy = mutation({
+
   args: { id: v.id("puppies") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();

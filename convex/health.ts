@@ -18,11 +18,15 @@ export const listVaccinations = query({
 export const addVaccination = mutation({
   args: {
     puppyId: v.string(),
-    name: v.string(),
+    name: v.optional(v.string()),
+    vaccineName: v.optional(v.string()),
     status: v.string(),
     administeredDate: v.optional(v.string()),
-    dueDate: v.string(),
-    isCore: v.boolean(),
+    dueDate: v.optional(v.string()),
+    nextDueDate: v.optional(v.string()),
+    vetClinic: v.optional(v.string()),
+    lotNumber: v.optional(v.string()),
+    isCore: v.optional(v.boolean()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -31,10 +35,13 @@ export const addVaccination = mutation({
 
     return await ctx.db.insert("vaccinations", {
       ...args,
+      name: args.name || args.vaccineName || "Vaccine",
+      vaccineName: args.vaccineName || args.name || "Vaccine",
       userId: identity.subject,
     });
   },
 });
+
 
 // Medications
 export const listMedications = query({

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   Sparkles, 
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { PuppyProfile } from '../types';
 import { Button } from '../components/ui/Button';
+import { storage } from '../lib/storage';
 
 interface SocializationGroomingViewProps {
   puppy: PuppyProfile;
@@ -61,22 +62,70 @@ const INITIAL_GROOMING_ITEMS: GroomingItem[] = [
 
 export const SocializationGroomingView: React.FC<SocializationGroomingViewProps> = ({ puppy }) => {
   const [tab, setTab] = useState<'socialization' | 'grooming'>('socialization');
-  const [socialItems, setSocialItems] = useState<SocializationItem[]>(INITIAL_SOCIAL_ITEMS);
-  const [groomingItems, setGroomingItems] = useState<GroomingItem[]>(INITIAL_GROOMING_ITEMS);
+  const [socialItems, setSocialItems] = useState<SocializationItem[]>(() => {
+    const fromStorage = storage.getSocialization();
+    if (fromStorage && fromStorage.length > 0) {
+      return fromStorage.map(s => ({
+        id: s.id,
+        category: (s.category.toLowerCase() as any) || 'people',
+        name: s.title,
+        status: (s.status as any) || 'positive',
+        notes: s.notes
+      }));
+    }
+    return INITIAL_SOCIAL_ITEMS;
+  });
+  const [groomingItems, setGroomingItems] = useState<GroomingItem[]>(() => {
+    const fromStorage = storage.getGroomingTasks();
+    if (fromStorage && fromStorage.length > 0) {
+      return fromStorage.map(g => ({
+        id: g.id,
+        name: g.label,
+        frequency: `Every ${g.frequencyDays} days`,
+        lastDone: g.lastDone ? new Date(g.lastDone).toLocaleDateString() : 'Pending',
+        cooperativeLevel: 'comfort'
+      }));
+    }
+    return INITIAL_GROOMING_ITEMS;
+  });
+
+  useEffect(() => {
+    return storage.subscribe(() => {
+      const fromSocial = storage.getSocialization();
+      if (fromSocial && fromSocial.length > 0) {
+        setSocialItems(fromSocial.map(s => ({
+          id: s.id,
+          category: (s.category.toLowerCase() as any) || 'people',
+          name: s.title,
+          status: (s.status as any) || 'positive',
+          notes: s.notes
+        })));
+      }
+      const fromGroom = storage.getGroomingTasks();
+      if (fromGroom && fromGroom.length > 0) {
+        setGroomingItems(fromGroom.map(g => ({
+          id: g.id,
+          name: g.label,
+          frequency: `Every ${g.frequencyDays} days`,
+          lastDone: g.lastDone ? new Date(g.lastDone).toLocaleDateString() : 'Pending',
+          cooperativeLevel: 'comfort'
+        })));
+      }
+    });
+  }, []);
 
   const handleCycleSocial = (id: string) => {
-    setSocialItems(prev => prev.map(item => {
-      if (item.id === id) {
-        const nextStatus: Record<SocializationItem['status'], SocializationItem['status']> = {
-          unexposed: 'positive',
-          positive: 'neutral',
-          neutral: 'needs_work',
-          needs_work: 'positive'
-        };
-        return { ...item, status: nextStatus[item.status] };
-      }
-      return item;
-    }));
+    const item = socialItems.find(i => i.id === id);
+    if (!item) return;
+    const nextStatus: Record<SocializationItem['status'], SocializationItem['status']> = {
+      unexposed: 'positive',
+      positive: 'neutral',
+      neutral: 'needs_work',
+      needs_work: 'positive'
+    };
+    const newStatus = nextStatus[item.status];
+    setSocialItems(prev => prev.map(s => s.id === id ? { ...s, status: newStatus } : s));
+    storage.updateSocializationStatus(id, newStatus);
   };
 
   const handleMarkGrooming = (id: string) => {
@@ -86,6 +135,9 @@ export const SocializationGroomingView: React.FC<SocializationGroomingViewProps>
       }
       return g;
     }));
+    const tasks = storage.getGroomingTasks();
+    const updated = tasks.map(t => t.id === id ? { ...t, lastDone: new Date().toISOString() } : t);
+    storage.saveGroomingTasks(updated);
   };
 
   const positiveCount = socialItems.filter(s => s.status === 'positive').length;

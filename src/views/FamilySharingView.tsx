@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   UserPlus, 
@@ -14,6 +14,7 @@ import {
 import { PuppyProfile } from '../types';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { storage } from '../lib/storage';
 
 interface FamilySharingViewProps {
   puppy: PuppyProfile;
@@ -28,17 +29,27 @@ interface Member {
   status: 'active' | 'invited';
 }
 
-const INITIAL_MEMBERS: Member[] = [
-  { id: 'm1', name: 'Sarah Miller', email: 'sarah@example.com', role: 'Admin', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80', status: 'active' },
-  { id: 'm2', name: 'David Miller', email: 'david@example.com', role: 'Member', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80', status: 'active' },
-  { id: 'm3', name: 'Elena (Rover Walker)', email: 'elena.walks@example.com', role: 'Walker / Sitter', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80', status: 'active' }
-];
+const mapFamilyToMember = (f: any): Member => ({
+  id: f.id,
+  name: f.name,
+  email: f.email,
+  role: f.role === 'Owner' ? 'Admin' : f.role === 'Walker' ? 'Walker / Sitter' : 'Member',
+  avatar: f.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+  status: 'active',
+});
 
 export const FamilySharingView: React.FC<FamilySharingViewProps> = ({ puppy }) => {
-  const [members, setMembers] = useState<Member[]>(INITIAL_MEMBERS);
+  const [members, setMembers] = useState<Member[]>(() => storage.getFamily().map(mapFamilyToMember));
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isCheatsheetOpen, setIsCheatsheetOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    const unsub = storage.subscribe(() => {
+      setMembers(storage.getFamily().map(mapFamilyToMember));
+    });
+    return unsub;
+  }, []);
 
   // Invite Form
   const [inviteEmail, setInviteEmail] = useState('');
@@ -49,16 +60,14 @@ export const FamilySharingView: React.FC<FamilySharingViewProps> = ({ puppy }) =
     e.preventDefault();
     if (!inviteEmail.trim()) return;
 
-    const newM: Member = {
-      id: `m-${Date.now()}`,
+    storage.addFamilyMember({
       name: inviteName || inviteEmail.split('@')[0],
       email: inviteEmail,
-      role: inviteRole,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
-      status: 'invited'
-    };
+      role: inviteRole === 'Admin' ? 'Admin' : 'Caregiver',
+      avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+      dateAdded: new Date().toISOString().split('T')[0],
+    });
 
-    setMembers([...members, newM]);
     setIsInviteOpen(false);
     setInviteEmail('');
     setInviteName('');
@@ -175,7 +184,7 @@ export const FamilySharingView: React.FC<FamilySharingViewProps> = ({ puppy }) =
                 </span>
                 {member.role !== 'Admin' && (
                   <button
-                    onClick={() => setMembers(members.filter(m => m.id !== member.id))}
+                    onClick={() => storage.removeFamilyMember(member.id)}
                     className="p-1 text-[#766A63] hover:text-rose-600 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />

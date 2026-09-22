@@ -45,6 +45,12 @@ export const TrainingAcademyView: React.FC<TrainingAcademyViewProps> = ({
   const [timerSeconds, setTimerSeconds] = useState(300); // 5 min
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
+  React.useEffect(() => {
+    return storage.subscribe(() => {
+      setLessons(storage.getTrainingLessons());
+    });
+  }, []);
+
   // Sync if prop changes
   React.useEffect(() => {
     if (activeLessonId) {

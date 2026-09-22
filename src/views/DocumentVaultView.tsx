@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
   Plus, 
@@ -19,9 +19,15 @@ interface DocumentVaultViewProps {
 }
 
 export const DocumentVaultView: React.FC<DocumentVaultViewProps> = ({ puppy }) => {
-  const [documents, setDocuments] = useState<DocumentRecord[]>(storage.getDocuments());
+  const [documents, setDocuments] = useState<DocumentRecord[]>(() => storage.getDocuments());
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<DocumentRecord | null>(null);
+
+  useEffect(() => {
+    return storage.subscribe(() => {
+      setDocuments(storage.getDocuments());
+    });
+  }, []);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -48,9 +54,8 @@ export const DocumentVaultView: React.FC<DocumentVaultViewProps> = ({ puppy }) =
   };
 
   const handleDelete = (id: string) => {
-    const updated = documents.filter(d => d.id !== id);
-    localStorage.setItem('puplume_documents_v1', JSON.stringify(updated));
-    setDocuments(updated);
+    storage.deleteDocument(id);
+    setDocuments(storage.getDocuments());
   };
 
   return (
@@ -160,7 +165,16 @@ export const DocumentVaultView: React.FC<DocumentVaultViewProps> = ({ puppy }) =
                 variant="primary"
                 className="w-full"
                 onClick={() => {
-                  alert(`Downloading ${selectedDoc.title}...`);
+                  const content = `PUPPY RECORD: ${selectedDoc.title}\nCategory: ${selectedDoc.category}\nDate: ${selectedDoc.date}\nNotes: ${selectedDoc.notes || 'None'}\nPuppy: ${puppy.name}`;
+                  const blob = new Blob([content], { type: 'text/plain' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${selectedDoc.title.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
                   setSelectedDoc(null);
                 }}
                 leftIcon={<Download className="w-4 h-4" />}

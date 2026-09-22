@@ -28,8 +28,22 @@ export default defineSchema({
     vetPhone: v.optional(v.string()),
     vetName: v.optional(v.string()),
     insuranceProvider: v.optional(v.string()),
+    insurancePolicyNumber: v.optional(v.string()),
     favoriteTreat: v.optional(v.string()),
+    adoptionDate: v.optional(v.string()),
     createdAt: v.string(),
+  }).index("by_user", ["userId"]),
+
+  // User Settings & Preferences
+  userSettings: defineTable({
+    userId: v.string(),
+    pottyAlerts: v.boolean(),
+    feedingAlerts: v.boolean(),
+    trainingAlerts: v.boolean(),
+    medAlerts: v.boolean(),
+    units: v.string(), // "imperial" | "metric"
+    activePuppyId: v.optional(v.string()),
+    updatedAt: v.string(),
   }).index("by_user", ["userId"]),
 
   // Daily schedule tasks
@@ -69,7 +83,8 @@ export default defineSchema({
     puppyId: v.string(),
     userId: v.string(),
     mealType: v.string(), // breakfast, lunch, dinner, snack, water
-    amountCups: v.number(),
+    amountCups: v.optional(v.number()),
+    foodBrand: v.optional(v.string()),
     timestamp: v.string(),
     notes: v.optional(v.string()),
   })
@@ -93,9 +108,14 @@ export default defineSchema({
   walkLogs: defineTable({
     puppyId: v.string(),
     userId: v.string(),
+    startTime: v.optional(v.string()),
     durationMin: v.number(),
     distanceMiles: v.optional(v.number()),
-    timestamp: v.string(),
+    peesCount: v.optional(v.number()),
+    poopsCount: v.optional(v.number()),
+    pullingRating: v.optional(v.string()),
+    reactivityNotes: v.optional(v.string()),
+    timestamp: v.optional(v.string()),
     route: v.optional(v.string()),
     notes: v.optional(v.string()),
   })
@@ -106,11 +126,15 @@ export default defineSchema({
   vaccinations: defineTable({
     puppyId: v.string(),
     userId: v.string(),
-    name: v.string(),
-    status: v.string(), // completed, scheduled, overdue
+    name: v.optional(v.string()),
+    vaccineName: v.optional(v.string()),
+    status: v.string(), // up_to_date, due_soon, overdue, scheduled, completed
     administeredDate: v.optional(v.string()),
-    dueDate: v.string(),
-    isCore: v.boolean(),
+    dueDate: v.optional(v.string()),
+    nextDueDate: v.optional(v.string()),
+    vetClinic: v.optional(v.string()),
+    lotNumber: v.optional(v.string()),
+    isCore: v.optional(v.boolean()),
     notes: v.optional(v.string()),
   })
     .index("by_puppy", ["puppyId"])
@@ -124,6 +148,7 @@ export default defineSchema({
     dosage: v.string(),
     frequency: v.string(),
     startDate: v.string(),
+    endDate: v.optional(v.string()),
     reminderTime: v.optional(v.string()),
     active: v.boolean(),
     notes: v.optional(v.string()),
@@ -152,10 +177,11 @@ export default defineSchema({
     puppyId: v.string(),
     userId: v.string(),
     title: v.string(),
-    category: v.string(), // vet, food, toys, training, grooming, gear, medical, insurance
+    category: v.string(),
     amount: v.number(),
     date: v.string(),
     vendor: v.string(),
+    receiptUrl: v.optional(v.string()),
     notes: v.optional(v.string()),
   })
     .index("by_puppy", ["puppyId"])
@@ -187,4 +213,93 @@ export default defineSchema({
   })
     .index("by_puppy", ["puppyId"])
     .index("by_user", ["userId"]),
+
+  // Training Lessons & Curriculum Progress
+  trainingLessons: defineTable({
+    puppyId: v.string(),
+    userId: v.string(),
+    lessonId: v.string(),
+    completed: v.boolean(),
+    mastered: v.boolean(),
+    lastPracticed: v.optional(v.string()),
+  })
+    .index("by_puppy", ["puppyId"])
+    .index("by_user", ["userId"])
+    .index("by_puppy_lesson", ["puppyId", "lessonId"]),
+
+  // Grooming Tasks
+  groomingTasks: defineTable({
+    puppyId: v.string(),
+    userId: v.string(),
+    type: v.string(), // bath, brush, nails, teeth, ears, haircut
+    label: v.string(),
+    lastDone: v.optional(v.string()),
+    nextDue: v.string(),
+    frequencyDays: v.number(),
+  })
+    .index("by_puppy", ["puppyId"])
+    .index("by_user", ["userId"]),
+
+  // Document Vault records
+  documents: defineTable({
+    puppyId: v.string(),
+    userId: v.string(),
+    title: v.string(),
+    category: v.string(),
+    date: v.string(),
+    fileType: v.string(),
+    fileSize: v.string(),
+    notes: v.optional(v.string()),
+  })
+    .index("by_puppy", ["puppyId"])
+    .index("by_user", ["userId"]),
+
+  // Behavior Incident logs
+  behaviorLogs: defineTable({
+    puppyId: v.string(),
+    userId: v.string(),
+    behaviorType: v.string(),
+    timestamp: v.string(),
+    severity: v.string(), // mild, moderate, high
+    trigger: v.optional(v.string()),
+    whatHelped: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  })
+    .index("by_puppy", ["puppyId"])
+    .index("by_user", ["userId"]),
+
+  // Notifications
+  notifications: defineTable({
+    userId: v.string(),
+    title: v.string(),
+    message: v.string(),
+    category: v.string(),
+    timestamp: v.string(),
+    read: v.boolean(),
+    actionUrl: v.optional(v.string()),
+  }).index("by_user", ["userId"]),
+
+  // AI Chat History
+  aiMessages: defineTable({
+    puppyId: v.string(),
+    userId: v.string(),
+    sender: v.string(), // user, assistant
+    text: v.string(),
+    timestamp: v.string(),
+    suggestedActions: v.optional(v.string()), // JSON stringified actions
+  })
+    .index("by_puppy", ["puppyId"])
+    .index("by_user", ["userId"]),
+
+  // Family Members
+  familyMembers: defineTable({
+    puppyId: v.optional(v.string()),
+    userId: v.string(),
+    name: v.string(),
+    email: v.string(),
+    role: v.string(),
+    avatarUrl: v.optional(v.string()),
+    dateAdded: v.string(),
+  }).index("by_user", ["userId"]),
 });
+

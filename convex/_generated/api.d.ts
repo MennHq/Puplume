@@ -8,13 +8,26 @@
  * @module
  */
 
+import type * as ai from "../ai.js";
+import type * as app from "../app.js";
+import type * as behavior from "../behavior.js";
+import type * as documents from "../documents.js";
 import type * as expenses from "../expenses.js";
+import type * as family from "../family.js";
+import type * as feeding from "../feeding.js";
+import type * as grooming from "../grooming.js";
 import type * as health from "../health.js";
 import type * as journal from "../journal.js";
+import type * as notifications from "../notifications.js";
 import type * as potty from "../potty.js";
 import type * as puppies from "../puppies.js";
+import type * as settings from "../settings.js";
+import type * as sleep from "../sleep.js";
+import type * as socialization from "../socialization.js";
 import type * as tasks from "../tasks.js";
+import type * as training from "../training.js";
 import type * as users from "../users.js";
+import type * as walk from "../walk.js";
 
 import type {
   ApiFromModules,
@@ -23,13 +36,26 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  ai: typeof ai;
+  app: typeof app;
+  behavior: typeof behavior;
+  documents: typeof documents;
   expenses: typeof expenses;
+  family: typeof family;
+  feeding: typeof feeding;
+  grooming: typeof grooming;
   health: typeof health;
   journal: typeof journal;
+  notifications: typeof notifications;
   potty: typeof potty;
   puppies: typeof puppies;
+  settings: typeof settings;
+  sleep: typeof sleep;
+  socialization: typeof socialization;
   tasks: typeof tasks;
+  training: typeof training;
   users: typeof users;
+  walk: typeof walk;
 }>;
 
 /**

@@ -9,7 +9,8 @@ import {
   Receipt, 
   Sparkles,
   Calendar,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 import { PuppyProfile, ExpenseRecord } from '../types';
 import { storage } from '../lib/storage';
@@ -24,6 +25,13 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({ puppy }) => {
   const [expenses, setExpenses] = useState<ExpenseRecord[]>(storage.getExpenses());
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+
+  React.useEffect(() => {
+    return storage.subscribe(() => {
+      setExpenses([...storage.getExpenses()]);
+    });
+  }, []);
+
 
   // Form states
   const [title, setTitle] = useState('');
@@ -190,8 +198,21 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({ puppy }) => {
                 </div>
               </div>
 
-              <div className="text-sm font-black text-[#2C211B]">
-                ${exp.amount.toFixed(2)}
+              <div className="flex items-center gap-3">
+                <div className="text-sm font-black text-[#2C211B]">
+                  ${exp.amount.toFixed(2)}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    storage.deleteExpense(exp.id);
+                    setExpenses([...storage.getExpenses()]);
+                  }}
+                  className="p-1 text-[#766A63] hover:text-rose-600 transition-colors cursor-pointer"
+                  title="Delete expense"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
           ))}

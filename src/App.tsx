@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser, SignInButton, SignUpButton } from '@clerk/react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
 import { PuppyProfile } from './types';
 import { storage } from './lib/storage';
 
@@ -31,18 +33,45 @@ export default function App() {
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Sync state if puppy changed
+  // Authoritative real-time data subscription from Convex
+  const cloudData = useQuery(api.app.getUserAppData, isSignedIn ? {} : 'skip');
+  const seedStarterData = useMutation(api.app.seedStarterData);
+
+  // Set authenticated user on storage to isolate data across users
   useEffect(() => {
-    const current = storage.getPuppy();
-    if (current && (!puppy || puppy.id !== current.id)) {
-      setPuppy(current);
-    }
+    storage.setAuthenticatedUser(user?.id ?? null);
+  }, [user?.id]);
+
+  // Reactive listener to storage changes
+  useEffect(() => {
+    const unsubscribe = storage.subscribe(() => {
+      const current = storage.getPuppy();
+      if (current) {
+        setPuppy({ ...current });
+      }
+    });
+    return unsubscribe;
   }, []);
+
+  // Hydrate from Convex reactive cloud subscription
+  useEffect(() => {
+    if (cloudData && user?.id) {
+      storage.hydrateFromConvex(cloudData);
+      const activePup = storage.getPuppy();
+      if (activePup) {
+        setPuppy(activePup);
+      } else if (cloudData.puppies && cloudData.puppies.length === 0) {
+        // Automatically seed starter records into Convex for this new user account
+        seedStarterData({ force: false }).catch(() => {});
+      }
+    }
+  }, [cloudData, user?.id, seedStarterData]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
 
   // 1. Loading authentication state
   if (!isLoaded) {

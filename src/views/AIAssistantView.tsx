@@ -43,6 +43,13 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({ puppy, onActio
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const unsub = storage.subscribe(() => {
+      setMessages(storage.getAIMessages());
+    });
+    return unsub;
+  }, []);
+
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

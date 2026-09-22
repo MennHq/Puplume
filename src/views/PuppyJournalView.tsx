@@ -10,6 +10,7 @@ import {
   Share2 
 } from 'lucide-react';
 import { PuppyProfile } from '../types';
+import { storage } from '../lib/storage';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 
@@ -17,46 +18,15 @@ interface PuppyJournalViewProps {
   puppy: PuppyProfile;
 }
 
-interface JournalEntry {
-  id: string;
-  date: string;
-  title: string;
-  body: string;
-  milestone?: string;
-  photoUrl?: string;
-}
-
-const INITIAL_ENTRIES: JournalEntry[] = [
-  {
-    id: 'j1',
-    date: 'Yesterday',
-    title: 'First full night sleeping through! 🌙',
-    body: 'Max slept from 10:15 PM all the way to 6:30 AM without a single whine or accident! Put the white noise machine right by his crate and gave him a frozen Kong filled with pumpkin puree.',
-    milestone: '8-Hour Sleep Milestone',
-    photoUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=600&q=80'
-  },
-  {
-    id: 'j2',
-    date: '3 days ago',
-    title: 'Zero indoor accidents for 48 hours!',
-    body: 'Taking him out on the 25-minute schedule suggested by PupLume paid off. He walked right to the back door and tapped the bell on his own.',
-    milestone: 'Bell Training Breakthrough'
-  },
-  {
-    id: 'j3',
-    date: '1 week ago',
-    title: 'Puppy kindergarten playdate with a Corgi',
-    body: 'Practiced soft play bows and took breaks whenever excitement spiked. His bite inhibition is getting so much gentler!',
-    photoUrl: 'https://images.unsplash.com/photo-1591769225440-811ad7d6eab2?auto=format&fit=crop&w=600&q=80'
-  }
-];
-
 export const PuppyJournalView: React.FC<PuppyJournalViewProps> = ({ puppy }) => {
-  const [entries, setEntries] = useState<JournalEntry[]>(() => {
-    const saved = localStorage.getItem('puplume_journal_entries');
-    return saved ? JSON.parse(saved) : INITIAL_ENTRIES;
-  });
+  const [entries, setEntries] = useState(() => storage.getJournal());
   const [isAddOpen, setIsAddOpen] = useState(false);
+
+  React.useEffect(() => {
+    return storage.subscribe(() => {
+      setEntries([...storage.getJournal()]);
+    });
+  }, []);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -68,24 +38,23 @@ export const PuppyJournalView: React.FC<PuppyJournalViewProps> = ({ puppy }) => 
     e.preventDefault();
     if (!title.trim() || !body.trim()) return;
 
-    const newEntry: JournalEntry = {
-      id: `j-${Date.now()}`,
-      date: 'Today',
+    storage.addJournalEntry({
+      puppyId: puppy.id,
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       title,
-      body,
-      milestone: milestone || undefined,
-      photoUrl: photoUrl || undefined
-    };
+      notes: body,
+      milestoneBadge: milestone || undefined,
+      mediaUrl: photoUrl || undefined
+    });
 
-    const updated = [newEntry, ...entries];
-    setEntries(updated);
-    localStorage.setItem('puplume_journal_entries', JSON.stringify(updated));
+    setEntries([...storage.getJournal()]);
     setIsAddOpen(false);
     setTitle('');
     setBody('');
     setMilestone('');
     setPhotoUrl('');
   };
+
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-24">
@@ -128,24 +97,38 @@ export const PuppyJournalView: React.FC<PuppyJournalViewProps> = ({ puppy }) => 
                 {entry.date}
               </span>
 
-              {entry.milestone && (
-                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 flex items-center gap-1 border border-amber-200">
-                  <Award className="w-3 h-3 text-amber-700" />
-                  {entry.milestone}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {(entry.milestoneBadge || (entry as any).milestone) && (
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 flex items-center gap-1 border border-amber-200">
+                    <Award className="w-3 h-3 text-amber-700" />
+                    {entry.milestoneBadge || (entry as any).milestone}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    storage.deleteJournalEntry(entry.id);
+                    setEntries([...storage.getJournal()]);
+                  }}
+                  className="p-1 text-[#766A63] hover:text-rose-600 transition-colors cursor-pointer"
+                  title="Delete memory"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             <h3 className="text-base font-extrabold text-[#2C211B]">{entry.title}</h3>
             <p className="text-xs sm:text-sm text-[#5F3E29] leading-relaxed whitespace-pre-line">
-              {entry.body}
+              {entry.notes || (entry as any).body}
             </p>
 
-            {entry.photoUrl && (
+            {(entry.mediaUrl || (entry as any).photoUrl) && (
               <div className="rounded-2xl overflow-hidden max-h-64 border border-[#E8DDD3]">
-                <img src={entry.photoUrl} alt={entry.title} className="w-full h-full object-cover" />
+                <img src={entry.mediaUrl || (entry as any).photoUrl} alt={entry.title} className="w-full h-full object-cover" />
               </div>
             )}
+
           </div>
         ))}
       </div>

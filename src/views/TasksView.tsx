@@ -25,6 +25,13 @@ interface TasksViewProps {
 export const TasksView: React.FC<TasksViewProps> = ({ puppy, onOpenLesson }) => {
   const [tasks, setTasks] = useState<TaskItem[]>(storage.getTasks());
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'completed'>('all');
+
+  React.useEffect(() => {
+    return storage.subscribe(() => {
+      setTasks([...storage.getTasks()]);
+    });
+  }, []);
+
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);

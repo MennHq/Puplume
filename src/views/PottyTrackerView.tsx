@@ -24,6 +24,13 @@ export const PottyTrackerView: React.FC<PottyTrackerViewProps> = ({ puppy }) => 
   const [logs, setLogs] = useState<PottyLog[]>(storage.getPottyLogs());
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
 
+  React.useEffect(() => {
+    return storage.subscribe(() => {
+      setLogs([...storage.getPottyLogs()]);
+    });
+  }, []);
+
+
   // Form states
   const [pottyType, setPottyType] = useState<'pee' | 'poop' | 'both' | 'accident'>('pee');
   const [location, setLocation] = useState<'outdoor' | 'pad' | 'indoor_accident'>('outdoor');
@@ -56,9 +63,8 @@ export const PottyTrackerView: React.FC<PottyTrackerViewProps> = ({ puppy }) => 
   };
 
   const handleDeleteLog = (id: string) => {
-    const updated = logs.filter(l => l.id !== id);
-    localStorage.setItem('puplume_potty_logs_v1', JSON.stringify(updated));
-    setLogs(updated);
+    storage.deletePottyLog(id);
+    setLogs(storage.getPottyLogs());
   };
 
   const outdoorCount = logs.filter(l => l.location === 'outdoor' || l.location === 'pad').length;

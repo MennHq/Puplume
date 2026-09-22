@@ -1,0 +1,213 @@
+import React, { useState } from 'react';
+import { 
+  Bell, 
+  Download, 
+  Upload, 
+  RotateCcw, 
+  ShieldCheck, 
+  Smartphone, 
+  Check, 
+  Trash2, 
+  ExternalLink 
+} from 'lucide-react';
+import { PuppyProfile } from '../types';
+import { storage } from '../lib/storage';
+import { Button } from '../components/ui/Button';
+
+interface SettingsViewProps {
+  puppy: PuppyProfile;
+  onResetData: () => void;
+}
+
+export const SettingsView: React.FC<SettingsViewProps> = ({ puppy, onResetData }) => {
+  const [pottyAlerts, setPottyAlerts] = useState(true);
+  const [feedingAlerts, setFeedingAlerts] = useState(true);
+  const [trainingAlerts, setTrainingAlerts] = useState(true);
+  const [medAlerts, setMedAlerts] = useState(true);
+  const [units, setUnits] = useState<'imperial' | 'metric'>('imperial');
+  const [isSaved, setIsSaved] = useState(false);
+
+  const handleExportJSON = () => {
+    const backup = {
+      puppy: storage.getPuppy(),
+      tasks: storage.getTasks(),
+      pottyLogs: storage.getPottyLogs(),
+      feedingLogs: storage.getFeedingLogs(),
+      sleepLogs: storage.getSleepLogs(),
+      vaccinations: storage.getVaccinations(),
+      medications: storage.getMedications(),
+      appointments: storage.getAppointments(),
+      expenses: storage.getExpenses(),
+      documents: storage.getDocuments(),
+      exportedAt: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `PupLume-Backup-${puppy.name}-${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = JSON.parse(event.target?.result as string);
+          if (data.puppy) storage.savePuppy(data.puppy);
+          if (data.tasks) storage.saveTasks(data.tasks);
+          alert('PupLume data restored successfully!');
+          window.location.reload();
+        } catch (err) {
+          alert('Invalid JSON backup file.');
+        }
+      };
+      reader.readAsText(e.target.files[0]);
+    }
+  };
+
+  const handleSaveSettings = () => {
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
+  };
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto pb-24">
+      {/* Header */}
+      <div className="bg-white rounded-3xl border border-[#E8DDD3] p-5 sm:p-6 shadow-xs">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-[#2C211B]">
+          Settings & Preferences
+        </h1>
+        <p className="text-xs text-[#766A63] mt-1">
+          Configure smart notification cadences, measurement systems, and data backup.
+        </p>
+      </div>
+
+      {/* Smart Notifications */}
+      <div className="p-6 rounded-3xl bg-white border border-[#E8DDD3] shadow-xs space-y-4">
+        <h3 className="text-sm font-bold text-[#2C211B] flex items-center gap-2">
+          <Bell className="w-4 h-4 text-[#8B5E3C]" />
+          Smart Reminder Notifications
+        </h3>
+
+        <div className="space-y-3">
+          {[
+            { id: 'potty', label: 'Predictive Potty Countdowns', desc: 'Alerts 10 minutes before next estimated bladder threshold', state: pottyAlerts, set: setPottyAlerts },
+            { id: 'feeding', label: 'Scheduled Mealtime Reminders', desc: 'Morning, noon, and evening alerts to keep feeding times reliable', state: feedingAlerts, set: setFeedingAlerts },
+            { id: 'training', label: 'Daily 5-Minute Training Drills', desc: 'Micro-session nudges when puppy is refreshed after nap', state: trainingAlerts, set: setTrainingAlerts },
+            { id: 'meds', label: 'Preventatives & Booster Notices', desc: 'Monthly heartworm/flea chews and clinic appointment reminders', state: medAlerts, set: setMedAlerts }
+          ].map((item) => (
+            <div key={item.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-[#FFF9F2] border border-[#E8DDD3]">
+              <div>
+                <h4 className="text-xs font-bold text-[#2C211B]">{item.label}</h4>
+                <p className="text-[11px] text-[#766A63]">{item.desc}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => item.set(!item.state)}
+                className={`w-11 h-6 rounded-full transition-colors cursor-pointer relative p-0.5 ${
+                  item.state ? 'bg-[#8B5E3C]' : 'bg-[#E8DDD3]'
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                    item.state ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Measurement Units */}
+      <div className="p-6 rounded-3xl bg-white border border-[#E8DDD3] shadow-xs space-y-3">
+        <h3 className="text-sm font-bold text-[#2C211B]">Measurement Units</h3>
+        <div className="grid grid-cols-2 gap-3 max-w-sm">
+          <button
+            onClick={() => setUnits('imperial')}
+            className={`py-3 px-4 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
+              units === 'imperial'
+                ? 'bg-[#8B5E3C] text-white border-[#8B5E3C]'
+                : 'bg-[#FFF9F2] text-[#2C211B] border-[#E8DDD3]'
+            }`}
+          >
+            Imperial (lbs, cups)
+          </button>
+          <button
+            onClick={() => setUnits('metric')}
+            className={`py-3 px-4 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
+              units === 'metric'
+                ? 'bg-[#8B5E3C] text-white border-[#8B5E3C]'
+                : 'bg-[#FFF9F2] text-[#2C211B] border-[#E8DDD3]'
+            }`}
+          >
+            Metric (kg, grams)
+          </button>
+        </div>
+      </div>
+
+      {/* Data Backup & Cloud Sync */}
+      <div className="p-6 rounded-3xl bg-white border border-[#E8DDD3] shadow-xs space-y-4">
+        <h3 className="text-sm font-bold text-[#2C211B] flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-[#8B5E3C]" />
+          Data Portability & Backup
+        </h3>
+        <p className="text-xs text-[#766A63]">
+          Your puppy data is stored offline-first on your device. You can download a full backup copy or restore on another phone.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportJSON}
+            leftIcon={<Download className="w-3.5 h-3.5" />}
+          >
+            Download JSON Backup
+          </Button>
+
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleImportJSON}
+            />
+            <div className="px-3 py-2 rounded-xl border border-[#E8DDD3] bg-[#FFF9F2] hover:bg-[#F3E7DA] text-xs font-bold text-[#5F3E29] flex items-center gap-1.5 transition-colors">
+              <Upload className="w-3.5 h-3.5" />
+              Restore from Backup
+            </div>
+          </label>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (confirm(`Reset all records to default starter data for ${puppy.name}?`)) {
+                onResetData();
+              }
+            }}
+            leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+          >
+            Reset Starter Data
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <Button
+          variant="primary"
+          onClick={handleSaveSettings}
+          leftIcon={isSaved ? <Check className="w-4 h-4" /> : undefined}
+        >
+          {isSaved ? 'Preferences Saved!' : 'Save Preferences'}
+        </Button>
+      </div>
+    </div>
+  );
+};

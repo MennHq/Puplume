@@ -1,131 +1,148 @@
-import React, { useEffect, useState } from 'react';
-import { Download, X, Smartphone, Share } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, X, Smartphone, Share, Sparkles } from 'lucide-react';
 import { PupLumeLogo } from '../common/PupLumeLogo';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import { usePWAInstall } from '../../hooks/usePWAInstall';
 
 export const InstallPWABanner: React.FC = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showBanner, setShowBanner] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
+  const [isDismissed, setIsDismissed] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
   useEffect(() => {
-    // Check if running in standalone PWA mode
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-      (window.navigator as any).standalone === true;
-
-    // Don't show inside iframe or if standalone
-    if (window.self !== window.top || isStandalone) return;
-
-    // Detect iOS
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const iosDevice = /iphone|ipad|ipod/.test(userAgent);
-    setIsIOS(iosDevice);
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowBanner(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
+    const dismissed = sessionStorage.getItem('puplume_pwa_banner_dismissed') === 'true';
+    if (dismissed) {
+      setIsDismissed(true);
+    }
   }, []);
 
+  // Suppress if already running in standalone PWA mode or dismissed
+  if (isInstalled || isDismissed) {
+    return null;
+  }
+
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      await deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
-      if (choice.outcome === 'accepted') {
-        setShowBanner(false);
+    if (isInstallable) {
+      const outcome = await install();
+      if (outcome) {
+        setIsDismissed(true);
       }
-      setDeferredPrompt(null);
-    } else if (isIOS) {
-      setShowIOSGuide(true);
     } else {
-      setShowBanner(false);
+      setShowIOSGuide(true);
     }
   };
 
   const handleDismiss = () => {
-    setShowBanner(false);
-    localStorage.setItem('puplume_pwa_dismissed', 'true');
+    setIsDismissed(true);
+    sessionStorage.setItem('puplume_pwa_banner_dismissed', 'true');
   };
-
-  if (!showBanner) return null;
 
   return (
     <>
-      <div
+      <aside
         id="pwa-install-banner"
-        className="fixed top-3 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-white border border-[#E8DDD3] shadow-lg rounded-2xl p-3.5 flex items-center justify-between gap-3 animate-fade-in"
+        aria-label="Install PupLume App"
+        className="relative z-30 bg-gradient-to-r from-[#FFF4E8] via-[#FFF9F2] to-[#F7ECE1] border-b border-[#E8DDD3] px-3.5 py-2.5 shadow-2xs"
       >
-        <div className="flex items-center gap-2.5">
-          <PupLumeLogo variant="icon" size="sm" />
-          <div>
-            <h4 className="text-xs font-bold text-[#2C211B] flex items-center gap-1.5">
-              Install PupLume
-              <span className="text-[10px] font-semibold bg-[#8B5E3C]/10 text-[#5F3E29] px-1.5 py-0.2 rounded-md">
-                PWA
-              </span>
-            </h4>
-            <p className="text-[11px] text-[#766A63] leading-tight mt-0.5">
-              Add to Home Screen for fast offline puppy tracking
-            </p>
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="relative shrink-0">
+              <img
+                src="/pwa-192x192.png"
+                alt="PupLume PWA"
+                className="w-8 h-8 rounded-xl border border-[#D1C2B4] shadow-xs object-cover"
+              />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full border border-white" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-xs font-bold text-[#2C211B] truncate">
+                  Install PupLume App
+                </p>
+                <span className="text-[10px] font-semibold bg-[#8B5E3C] text-white px-1.5 py-0.2 rounded-md">
+                  PWA Ready
+                </span>
+              </div>
+              <p className="text-[11px] text-[#766A63] truncate">
+                Add to your home screen or desktop for fast launch, offline mode, and routine reminders.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              id="pwa-install-action-button"
+              onClick={handleInstallClick}
+              className="text-xs font-bold bg-[#8B5E3C] hover:bg-[#6D492F] active:scale-95 text-white px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Install App</span>
+            </button>
+            <button
+              id="pwa-dismiss-button"
+              onClick={handleDismiss}
+              className="p-1.5 text-[#766A63] hover:text-[#2C211B] rounded-lg hover:bg-[#E8DDD3]/50 transition-colors cursor-pointer"
+              aria-label="Dismiss banner"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
+      </aside>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            id="pwa-install-action-button"
-            onClick={handleInstallClick}
-            className="text-xs font-bold bg-[#8B5E3C] hover:bg-[#5F3E29] text-white px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Install
-          </button>
-          <button
-            id="pwa-dismiss-button"
-            onClick={handleDismiss}
-            className="p-1.5 text-[#766A63] hover:text-[#2C211B] rounded-lg hover:bg-[#F3E7DA]/50 transition-colors cursor-pointer"
-            aria-label="Dismiss banner"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* iOS Manual Install Guide Modal */}
+      {/* Guide modal if native prompt cannot be automatically invoked */}
       {showIOSGuide && (
-        <div className="fixed inset-0 z-50 bg-[#2C211B]/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-5 border border-[#E8DDD3] shadow-xl text-center">
-            <PupLumeLogo variant="icon" size="md" className="mx-auto mb-3" />
-            <h3 className="text-base font-bold text-[#2C211B]">Install on iPhone / iPad</h3>
-            <p className="text-xs text-[#766A63] mt-1 mb-4">
-              Apple Safari does not allow silent one-tap installs, but you can add PupLume in 2 taps:
+        <div className="fixed inset-0 z-50 bg-[#2C211B]/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#FFF9F2] rounded-2xl max-w-sm w-full p-5 border border-[#E8DDD3] shadow-2xl text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex items-center gap-2">
+                <img src="/pwa-192x192.png" alt="PupLume" className="w-8 h-8 rounded-xl border border-[#E8DDD3]" />
+                <h3 className="text-sm font-bold text-[#2C211B]">Install PupLume</h3>
+              </div>
+              <button
+                onClick={() => setShowIOSGuide(false)}
+                className="p-1 text-[#766A63] hover:text-[#2C211B] rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#766A63] text-left mt-1 mb-3">
+              Follow these simple steps to install PupLume as a standalone app on your device:
             </p>
 
-            <div className="text-left space-y-2.5 text-xs bg-[#FFF9F2] p-3.5 rounded-xl border border-[#E8DDD3] mb-4">
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#8B5E3C] text-white flex items-center justify-center font-bold text-[10px]">1</span>
-                <span>Tap the <strong>Share</strong> button <Share className="inline w-3.5 h-3.5 text-[#8B5E3C]" /> at bottom of Safari.</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#8B5E3C] text-white flex items-center justify-center font-bold text-[10px]">2</span>
-                <span>Scroll down and select <strong>"Add to Home Screen"</strong>.</span>
-              </div>
+            <div className="text-left space-y-2.5 text-xs bg-white p-3.5 rounded-xl border border-[#E8DDD3] mb-4">
+              {isIOS ? (
+                <>
+                  <div className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#8B5E3C] text-white flex items-center justify-center font-bold text-[10px] shrink-0">1</span>
+                    <span>Tap the <strong>Share</strong> button <Share className="inline w-3.5 h-3.5 text-[#8B5E3C]" /> in the Safari toolbar.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#8B5E3C] text-white flex items-center justify-center font-bold text-[10px] shrink-0">2</span>
+                    <span>Scroll down and select <strong>&quot;Add to Home Screen&quot;</strong>.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#8B5E3C] text-white flex items-center justify-center font-bold text-[10px] shrink-0">3</span>
+                    <span>Tap <strong>Add</strong> in the top-right corner to finish.</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#8B5E3C] text-white flex items-center justify-center font-bold text-[10px] shrink-0">1</span>
+                    <span>In your browser&apos;s address bar or menu (<span className="font-bold">⋮</span>), look for the <strong>Install</strong> or <strong>Add to Home Screen</strong> icon.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#8B5E3C] text-white flex items-center justify-center font-bold text-[10px] shrink-0">2</span>
+                    <span>Click <strong>Install PupLume</strong> to add it to your launcher or desktop app list.</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <button
               onClick={() => setShowIOSGuide(false)}
-              className="w-full py-2.5 bg-[#8B5E3C] text-white font-bold rounded-xl text-xs hover:bg-[#5F3E29] transition-colors cursor-pointer"
+              className="w-full py-2.5 bg-[#8B5E3C] text-white font-bold rounded-xl text-xs hover:bg-[#6D492F] transition-colors cursor-pointer"
             >
               Got it!
             </button>

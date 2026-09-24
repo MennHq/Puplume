@@ -1,12 +1,17 @@
 // PupLume PWA Service Worker
-const CACHE_NAME = 'puplume-cache-v1';
+const CACHE_NAME = 'puplume-cache-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/puplume-logo.svg',
-  '/puplume-icon-192.svg',
-  '/puplume-icon-512.svg'
+  '/pwa-192x192.png',
+  '/pwa-512x512.png',
+  '/pwa-maskable-512x512.png',
+  '/apple-touch-icon.png',
+  '/favicon.png',
+  '/favicon.ico',
+  '/icon.svg',
+  '/puplume-logo.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -36,18 +41,23 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Pass through non-GET and API calls directly to network
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
+  // Pass through non-GET, API calls, and external auth calls directly to network
+  if (
+    event.request.method !== 'GET' ||
+    event.request.url.includes('/api/') ||
+    event.request.url.includes('clerk') ||
+    event.request.url.includes('convex')
+  ) {
     return;
   }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Fetch fresh copy in background
+        // Stale-while-revalidate for cached static assets
         fetch(event.request)
           .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
+            if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
               caches.open(CACHE_NAME).then((cache) => {
                 cache.put(event.request, networkResponse.clone());
               });

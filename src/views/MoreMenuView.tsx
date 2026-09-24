@@ -16,6 +16,8 @@ import {
   Dog
 } from 'lucide-react';
 import { PuppyProfile } from '../types';
+import { PWAInstallButton } from '../components/pwa/PWAInstallButton';
+import { Download } from 'lucide-react';
 
 interface MoreMenuViewProps {
   puppy: PuppyProfile;
@@ -78,6 +80,28 @@ export const MoreMenuView: React.FC<MoreMenuViewProps> = ({ puppy, onNavigate, o
         </div>
 
         <ChevronRight className="w-5 h-5 text-[#766A63]" />
+      </div>
+
+      {/* PWA Home Screen Installation Card */}
+      <div className="bg-gradient-to-br from-[#FFF4E8] to-[#FFF9F2] rounded-3xl border border-[#E8DDD3] p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-white border border-[#E8DDD3] flex items-center justify-center shadow-xs shrink-0">
+            <img src="/pwa-192x192.png" alt="PupLume PWA" className="w-9 h-9 rounded-xl object-cover" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-sm font-extrabold text-[#2C211B]">Install PupLume App</h3>
+              <span className="text-[10px] bg-[#8B5E3C] text-white px-1.5 py-0.2 rounded-md font-bold">PWA</span>
+            </div>
+            <p className="text-xs text-[#766A63] mt-0.5">
+              Add to Home Screen for one-tap launch, offline capability, and standalone display.
+            </p>
+          </div>
+        </div>
+
+        <div className="self-end sm:self-center shrink-0">
+          <PWAInstallButton variant="primary" />
+        </div>
       </div>
 
       {/* Sections */}

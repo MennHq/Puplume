@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { PupLumeLogo } from '../components/common/PupLumeLogo';
 import { Button } from '../components/ui/Button';
+import { PWAInstallButton } from '../components/pwa/PWAInstallButton';
 
 interface MarketingLandingProps {
   onGetStarted: () => void;
@@ -48,6 +49,8 @@ export const MarketingLanding: React.FC<MarketingLandingProps> = ({
           </nav>
 
           <div className="flex items-center gap-2.5">
+            <PWAInstallButton variant="outline" className="hidden sm:flex" />
+
             <button
               id="marketing-login-btn"
               onClick={onSignIn}

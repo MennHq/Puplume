@@ -24,6 +24,8 @@ import { GlobalSearchModal } from '../ui/GlobalSearchModal';
 import { NotificationCenterModal } from '../ui/NotificationCenterModal';
 import { InstallPWABanner } from '../ui/InstallPWABanner';
 import { ClerkAuthControls } from '../auth/ClerkAuthControls';
+import { PWAInstallButton } from '../pwa/PWAInstallButton';
+import { OfflineIndicator } from '../pwa/OfflineIndicator';
 
 interface AppLayoutProps {
   currentView: string;
@@ -59,6 +61,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FFF9F2] text-[#2C211B] flex flex-col font-sans">
+      {/* Offline Status Alert */}
+      <OfflineIndicator />
+
       {/* PWA Prompt Banner */}
       <InstallPWABanner />
 
@@ -150,6 +155,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
           {/* Right Action Icons */}
           <div className="flex items-center gap-2">
+            {/* Prominent In-App PWA Install Button */}
+            <PWAInstallButton variant="primary" />
+
             <button
               onClick={() => setIsSearchOpen(true)}
               className="p-2.5 rounded-xl border border-[#E8DDD3] bg-[#FFF9F2] hover:bg-[#F3E7DA] text-[#5F3E29] transition-colors cursor-pointer"

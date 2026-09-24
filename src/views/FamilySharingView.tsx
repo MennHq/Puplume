@@ -154,11 +154,18 @@ export const FamilySharingView: React.FC<FamilySharingViewProps> = ({ puppy }) =
       <div className="bg-white rounded-2xl border border-[#E8DDD3] p-5 shadow-xs">
         <h3 className="text-sm font-bold text-[#2C211B] mb-4">Care Team for {puppy.name}</h3>
         <div className="space-y-3">
-          {members.map((member) => (
-            <div
-              key={member.id}
-              className="p-3.5 rounded-xl border border-[#E8DDD3] bg-white hover:bg-[#FFF9F2] transition-colors flex items-center justify-between gap-3"
-            >
+          {members.length === 0 ? (
+            <div className="p-8 text-center text-xs text-[#766A63]">
+              <Users className="w-8 h-8 text-[#8B5E3C]/40 mx-auto mb-2" />
+              <p className="font-semibold text-[#2C211B]">No family members or caregivers invited yet</p>
+              <p className="mt-0.5">Invite your partner, family members, or pet sitters to co-parent {puppy.name}.</p>
+            </div>
+          ) : (
+            members.map((member) => (
+              <div
+                key={member.id}
+                className="p-3.5 rounded-xl border border-[#E8DDD3] bg-white hover:bg-[#FFF9F2] transition-colors flex items-center justify-between gap-3"
+              >
               <div className="flex items-center gap-3">
                 <img
                   src={member.avatar}
@@ -192,7 +199,7 @@ export const FamilySharingView: React.FC<FamilySharingViewProps> = ({ puppy }) =
                 )}
               </div>
             </div>
-          ))}
+          )))}
         </div>
       </div>
 

@@ -200,6 +200,7 @@ export interface DocumentRecord {
   date: string;
   fileType: string;
   fileSize: string;
+  fileUrl?: string;
   notes?: string;
 }
 

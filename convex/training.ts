@@ -2,15 +2,18 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 export const getTrainingLessons = query({
-  args: { puppyId: v.string() },
+  args: { 
+    puppyId: v.string(),
+    userId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    const userId = identity?.subject || args.userId;
+    if (!userId) return [];
 
     return await ctx.db
       .query("trainingLessons")
-      .withIndex("by_puppy", (q) => q.eq("puppyId", args.puppyId))
-      .filter((q) => q.eq(q.field("userId"), identity.subject))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
   },
 });
@@ -18,6 +21,7 @@ export const getTrainingLessons = query({
 export const updateLessonStatus = mutation({
   args: {
     puppyId: v.string(),
+    userId: v.optional(v.string()),
     lessonId: v.string(),
     completed: v.boolean(),
     mastered: v.boolean(),
@@ -25,7 +29,8 @@ export const updateLessonStatus = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    const userId = identity?.subject || args.userId;
+    if (!userId) throw new Error("Authentication or userId required");
 
     const existing = await ctx.db
       .query("trainingLessons")
@@ -34,7 +39,7 @@ export const updateLessonStatus = mutation({
       )
       .first();
 
-    if (existing && existing.userId === identity.subject) {
+    if (existing && (!userId || existing.userId === userId)) {
       await ctx.db.patch(existing._id, {
         completed: args.completed,
         mastered: args.mastered,
@@ -45,7 +50,7 @@ export const updateLessonStatus = mutation({
 
     return await ctx.db.insert("trainingLessons", {
       puppyId: args.puppyId,
-      userId: identity.subject,
+      userId,
       lessonId: args.lessonId,
       completed: args.completed,
       mastered: args.mastered,

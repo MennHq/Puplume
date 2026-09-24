@@ -1,402 +1,1024 @@
 import React, { useState } from 'react';
-import { Sparkles, ArrowRight, ArrowLeft, Camera, Check, Dog, Heart, Calendar } from 'lucide-react';
+import { 
+  Sparkles, 
+  Dog, 
+  Clock, 
+  Calendar, 
+  ShieldAlert, 
+  CheckCircle2, 
+  ArrowRight, 
+  ArrowLeft,
+  Camera,
+  Sun,
+  Moon,
+  Utensils,
+  Award,
+  AlertTriangle,
+  Loader2
+} from 'lucide-react';
 import { PupLumeLogo } from '../components/common/PupLumeLogo';
 import { Button } from '../components/ui/Button';
-import { PuppyProfile } from '../types';
+import { PuppyProfile, TaskItem, TaskCategory } from '../types';
 import { storage } from '../lib/storage';
+import { completeAIOnboardingInConvex } from '../lib/convex';
+import { CloudinaryImageUploader } from '../components/ui/CloudinaryImageUploader';
 
 interface OnboardingWizardProps {
   onComplete: (puppy: PuppyProfile) => void;
   onCancel?: () => void;
+  userId?: string;
 }
 
-const PUPPY_PHOTO_PRESETS = [
-  { label: 'Golden Retriever', url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=400&q=80' },
-  { label: 'French Bulldog', url: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Labrador Retriever', url: 'https://images.unsplash.com/photo-1591769225440-811ad7d6eab2?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Doodle / Poodle', url: 'https://images.unsplash.com/photo-1534361960057-19889db98a1e?auto=format&fit=crop&w=400&q=80' },
-  { label: 'German Shepherd', url: 'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?auto=format&fit=crop&w=400&q=80' },
-  { label: 'Corgi', url: 'https://images.unsplash.com/photo-1612536057832-2ff7ead58194?auto=format&fit=crop&w=400&q=80' }
+interface GeneratedTask {
+  title: string;
+  category: TaskCategory;
+  time: string;
+  durationMin: number;
+  period: 'morning' | 'afternoon' | 'evening';
+  description: string;
+}
+
+const COMMON_BREEDS = [
+  'Golden Retriever',
+  'French Bulldog',
+  'German Shepherd',
+  'Labrador Retriever',
+  'Poodle',
+  'Goldendoodle',
+  'Siberian Husky',
+  'Pembroke Welsh Corgi',
+  'Beagle',
+  'Dachshund',
+  'Rottweiler',
+  'Mixed Breed / Mutt'
 ];
 
-export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onCancel }) => {
-  const [step, setStep] = useState(1);
+export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onCancel, userId }) => {
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
-  // Form states
-  const [name, setName] = useState('Max');
-  const [photoUrl, setPhotoUrl] = useState(PUPPY_PHOTO_PRESETS[0].url);
-  const [breed, setBreed] = useState('Golden Retriever');
-  const [birthDate, setBirthDate] = useState('2026-06-15');
+  // Profile data
+  const [userName, setUserName] = useState('');
+  const [puppyName, setPuppyName] = useState('');
+  const [breed, setBreed] = useState('');
   const [sex, setSex] = useState<'male' | 'female'>('male');
-  const [weightLbs, setWeightLbs] = useState('24.2');
-  const [primaryFocus, setPrimaryFocus] = useState('House Training & Crate');
-  const [temperament, setTemperament] = useState('Gentle, curious, playful, food-motivated');
-  const [foodBrand, setFoodBrand] = useState('Purina Pro Plan Large Breed Puppy');
-  const [vetClinic, setVetClinic] = useState('City Vet Animal Hospital');
-  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [ageValue, setAgeValue] = useState<string>('');
+  const [ageUnit, setAgeUnit] = useState<'weeks' | 'months' | 'years'>('weeks');
+  const [ageValidationError, setAgeValidationError] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState('');
 
-  // Calculate age in weeks
-  const calculateWeeks = (dobStr: string) => {
-    const dob = new Date(dobStr);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - dob.getTime());
-    const weeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
-    return isNaN(weeks) ? 14 : weeks;
+  // Household timings
+  const [wakeTime, setWakeTime] = useState('07:00 AM');
+  const [breakfastTime, setBreakfastTime] = useState('07:30 AM');
+  const [lunchTime, setLunchTime] = useState('12:30 PM');
+  const [dinnerTime, setDinnerTime] = useState('06:30 PM');
+  const [bedtime, setBedtime] = useState('10:00 PM');
+  const [trainingFocus, setTrainingFocus] = useState('Potty Training & Housebreaking');
+
+  // Generated tasks state
+  const [generatedTasks, setGeneratedTasks] = useState<GeneratedTask[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Real-world Dog Age Validation
+  const validateAge = (valStr: string, unit: 'weeks' | 'months' | 'years'): { valid: boolean; error?: string; ageInWeeks?: number } => {
+    const trimmed = valStr.trim();
+    if (!trimmed) {
+      return { valid: false, error: 'Please enter your puppy\'s age.' };
+    }
+
+    const num = parseFloat(trimmed);
+    if (isNaN(num) || num <= 0) {
+      return { valid: false, error: 'Please enter a valid positive number for age.' };
+    }
+
+    // Reject absurd numbers like 9999, 100, etc.
+    if (num >= 9999) {
+      return {
+        valid: false,
+        error: `Dogs don't live to 9999! Puppies are typically 8 to 52 weeks old (and adult dogs live up to 15–20 years). Please enter your dog's real age.`
+      };
+    }
+
+    if (unit === 'years' && num > 25) {
+      return {
+        valid: false,
+        error: `A dog cannot be ${num} years old! Dogs live up to 15–20 years. Please enter a realistic age.`
+      };
+    }
+
+    if (unit === 'weeks') {
+      if (num < 4) {
+        return {
+          valid: false,
+          error: `A puppy under 4 weeks needs maternal milk and care. Please confirm age or enter at least 4-8 weeks.`
+        };
+      }
+      if (num > 104) {
+        return {
+          valid: false,
+          error: `${num} weeks is over 2 years! Please switch unit to "Years" or enter weeks under 104.`
+        };
+      }
+      return { valid: true, ageInWeeks: Math.round(num) };
+    }
+
+    if (unit === 'months') {
+      if (num > 36) {
+        return {
+          valid: false,
+          error: `${num} months is over 3 years! Please switch unit to "Years".`
+        };
+      }
+      return { valid: true, ageInWeeks: Math.round(num * 4.33) };
+    }
+
+    if (unit === 'years') {
+      return { valid: true, ageInWeeks: Math.round(num * 52) };
+    }
+
+    return { valid: true, ageInWeeks: 12 };
   };
 
-  const handleNext = () => {
-    if (step < 5) {
-      setStep(step + 1);
+  const handleAgeChange = (newVal: string, newUnit: 'weeks' | 'months' | 'years') => {
+    setAgeValue(newVal);
+    setAgeUnit(newUnit);
+    if (!newVal.trim()) {
+      setAgeValidationError(null);
+      return;
+    }
+    const check = validateAge(newVal, newUnit);
+    if (!check.valid) {
+      setAgeValidationError(check.error || 'Invalid age');
     } else {
-      // Complete
-      setIsGeneratingPlan(true);
-      setTimeout(() => {
-        const puppy: PuppyProfile = {
-          id: `pup-${Date.now()}`,
-          name,
-          breed,
-          birthDate,
-          sex,
-          weightLbs: parseFloat(weightLbs) || 20,
-          photoUrl,
-          temperament,
-          dietaryRestrictions: `${foodBrand}`,
-          vetClinic,
-          vetName: 'Dr. Eleanor Vance, DVM',
-          vetPhone: '(555) 392-8819',
-          allergies: 'None known',
-          favoriteTreat: 'Chicken jerky and liver',
-          createdAt: new Date().toISOString()
-        };
-
-        storage.savePuppy(puppy);
-        setIsGeneratingPlan(false);
-        onComplete(puppy);
-      }, 1200);
+      setAgeValidationError(null);
     }
   };
 
-  const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
-    } else if (onCancel) {
-      onCancel();
+  // Build 100% personalized schedule matching household timings
+  const generatePersonalizedRoutine = () => {
+    const name = puppyName.trim() || 'Puppy';
+    const tasks: GeneratedTask[] = [
+      {
+        title: 'Morning Wake-Up & Potty Stretch',
+        category: 'potty',
+        time: wakeTime,
+        durationMin: 15,
+        period: 'morning',
+        description: `Take ${name} immediately outside upon waking to your designated bathroom spot. Reward with high praise upon elimination.`
+      },
+      {
+        title: `${name}'s Breakfast & Hydration`,
+        category: 'feeding',
+        time: breakfastTime,
+        durationMin: 20,
+        period: 'morning',
+        description: `Measured meal portion with fresh water. Avoid vigorous exercise right after feeding to promote safe digestion.`
+      },
+      {
+        title: 'Post-Meal Potty Break',
+        category: 'potty',
+        time: '08:00 AM',
+        durationMin: 15,
+        period: 'morning',
+        description: `Puppies regularly eliminate 15 to 30 minutes after eating. Watch for sniffing or circling.`
+      },
+      {
+        title: 'Morning Nap & Rest in Den',
+        category: 'sleep',
+        time: '09:00 AM',
+        durationMin: 90,
+        period: 'morning',
+        description: `Young puppies require 16–18 hours of sleep per day to support brain development and prevent overtired tantrums.`
+      },
+      {
+        title: 'Midday Lunch & Hydration',
+        category: 'feeding',
+        time: lunchTime,
+        durationMin: 20,
+        period: 'afternoon',
+        description: `Midday meal to support young puppy blood sugar and steady growth.`
+      },
+      {
+        title: `Targeted Training: ${trainingFocus}`,
+        category: 'training',
+        time: '02:30 PM',
+        durationMin: 10,
+        period: 'afternoon',
+        description: `Short, high-energy positive reinforcement session focused on ${trainingFocus}. Stop on a winning repetition!`
+      },
+      {
+        title: 'Evening Sniff Walk & Exploration',
+        category: 'walk',
+        time: '05:30 PM',
+        durationMin: 20,
+        period: 'evening',
+        description: `Gentle mental stimulation walk. Allow ${name} to sniff safely on a loose harness to expend energy calmly.`
+      },
+      {
+        title: `${name}'s Dinner Meal`,
+        category: 'feeding',
+        time: dinnerTime,
+        durationMin: 20,
+        period: 'evening',
+        description: `Final measured meal of the day. Pick up the water bowl 2 hours before bedtime to prevent midnight bathroom breaks.`
+      },
+      {
+        title: 'Final Bedtime Potty & Lights Out',
+        category: 'potty',
+        time: bedtime,
+        durationMin: 15,
+        period: 'evening',
+        description: `Calm, low-stimulation final outdoor break right before tucking ${name} into their sleeping crate for the night.`
+      }
+    ];
+
+    setGeneratedTasks(tasks);
+    setCurrentStep(5);
+  };
+
+  // Save finalized profile & schedule to storage and Convex
+  const handleFinalActivation = async () => {
+    setIsSaving(true);
+    try {
+      const ageValidation = validateAge(ageValue, ageUnit);
+      const computedWeeks = ageValidation.ageInWeeks || 12;
+
+      // Approximate birth date from age in weeks
+      const birthMs = Date.now() - computedWeeks * 7 * 24 * 60 * 60 * 1000;
+      const birthDate = new Date(birthMs).toISOString().split('T')[0];
+
+      const newPuppy: PuppyProfile = {
+        id: `pup-${Date.now()}`,
+        name: puppyName.trim() || 'My Puppy',
+        breed: breed.trim() || 'Mixed Breed',
+        birthDate,
+        sex,
+        weightLbs: 12,
+        photoUrl: photoUrl || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=600',
+        temperament: 'Playful, affectionate, and learning fast',
+        favoriteTreat: 'Small training bites',
+        createdAt: new Date().toISOString(),
+      };
+
+      // Ensure tasks are never empty
+      let effectiveTasks = generatedTasks;
+      if (effectiveTasks.length === 0) {
+        effectiveTasks = [
+          {
+            title: 'Morning Wake-Up & Potty Stretch',
+            category: 'potty',
+            time: wakeTime || '07:00 AM',
+            durationMin: 15,
+            period: 'morning',
+            description: `Take ${newPuppy.name} immediately outside upon waking to your designated bathroom spot.`
+          },
+          {
+            title: `${newPuppy.name}'s Breakfast & Hydration`,
+            category: 'feeding',
+            time: breakfastTime || '07:30 AM',
+            durationMin: 20,
+            period: 'morning',
+            description: `Measured meal portion with fresh water.`
+          },
+          {
+            title: 'Post-Meal Potty Break',
+            category: 'potty',
+            time: '08:00 AM',
+            durationMin: 15,
+            period: 'morning',
+            description: `Puppies regularly eliminate 15 to 30 minutes after eating.`
+          },
+          {
+            title: 'Morning Nap & Rest in Den',
+            category: 'sleep',
+            time: '09:00 AM',
+            durationMin: 90,
+            period: 'morning',
+            description: `Young puppies require 16–18 hours of sleep per day to support brain development.`
+          },
+          {
+            title: 'Midday Lunch & Hydration',
+            category: 'feeding',
+            time: lunchTime || '12:30 PM',
+            durationMin: 20,
+            period: 'afternoon',
+            description: `Midday meal to support young puppy blood sugar and steady growth.`
+          },
+          {
+            title: `Targeted Training: ${trainingFocus || 'Basic Commands'}`,
+            category: 'training',
+            time: '02:30 PM',
+            durationMin: 10,
+            period: 'afternoon',
+            description: `Short, high-energy positive reinforcement session.`
+          },
+          {
+            title: 'Evening Sniff Walk & Exploration',
+            category: 'walk',
+            time: '05:30 PM',
+            durationMin: 20,
+            period: 'evening',
+            description: `Gentle mental stimulation walk.`
+          },
+          {
+            title: `${newPuppy.name}'s Dinner Meal`,
+            category: 'feeding',
+            time: dinnerTime || '06:30 PM',
+            durationMin: 20,
+            period: 'evening',
+            description: `Final measured meal of the day.`
+          },
+          {
+            title: 'Final Bedtime Potty & Lights Out',
+            category: 'potty',
+            time: bedtime || '10:00 PM',
+            durationMin: 15,
+            period: 'evening',
+            description: `Calm, low-stimulation final outdoor break right before tucking ${newPuppy.name} in.`
+          }
+        ];
+      }
+
+      // Save to local storage
+      storage.savePuppy(newPuppy);
+      const taskItems: TaskItem[] = effectiveTasks.map((t, idx) => ({
+        id: `task-${Date.now()}-${idx}`,
+        puppyId: newPuppy.id,
+        title: t.title,
+        category: t.category,
+        time: t.time,
+        durationMin: t.durationMin,
+        completed: false,
+        skipped: false,
+        period: t.period,
+        date: new Date().toISOString().split('T')[0],
+        description: t.description,
+      }));
+      storage.saveTasks(taskItems);
+      storage.saveSettings({
+        ...storage.getSettings(),
+        hasCompletedOnboarding: true,
+        activePuppyId: newPuppy.id,
+      });
+
+      // Sync to Convex
+      const effectiveUserId = userId || storage.getCurrentUserId();
+      if (effectiveUserId) {
+        await completeAIOnboardingInConvex(
+          {
+            name: newPuppy.name,
+            breed: newPuppy.breed,
+            birthDate: newPuppy.birthDate,
+            sex: newPuppy.sex,
+            weightLbs: newPuppy.weightLbs,
+            photoUrl: newPuppy.photoUrl,
+            temperament: newPuppy.temperament,
+            favoriteTreat: newPuppy.favoriteTreat,
+          },
+          effectiveTasks.map((t) => ({
+            title: t.title,
+            category: t.category,
+            time: t.time,
+            durationMin: t.durationMin,
+            period: t.period,
+            description: t.description,
+          })),
+          effectiveUserId
+        );
+      }
+
+      onComplete(newPuppy);
+    } catch (err) {
+      console.error('Failed to complete onboarding:', err);
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF9F2] flex flex-col justify-between p-4 sm:p-8">
-      {/* Top Bar */}
-      <div className="max-w-xl mx-auto w-full flex items-center justify-between py-2">
-        <PupLumeLogo variant="full" size="sm" />
-        <div className="flex items-center gap-1.5 text-xs font-bold text-[#766A63]">
-          Step {step} of 5
+    <div className="min-h-screen bg-[#FAF6F0] flex flex-col justify-between py-6 px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto w-full space-y-6">
+        {/* Navigation Bar */}
+        <div className="flex items-center justify-between bg-white px-5 py-4 rounded-3xl border border-[#E8DDD3] shadow-xs">
+          <div className="flex items-center gap-3">
+            <PupLumeLogo size="sm" />
+            <div className="hidden sm:block h-5 w-px bg-[#E8DDD3]" />
+            <span className="text-xs font-black uppercase tracking-wider text-[#8B5E3C]">
+              AI Routine Architect
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {onCancel && (
+              <Button variant="ghost" size="sm" onClick={onCancel} className="text-xs">
+                Cancel
+              </Button>
+            )}
+            <div className="flex items-center gap-1 bg-[#FAF6F0] px-3 py-1.5 rounded-full border border-[#E8DDD3] text-xs font-bold text-[#8B5E3C]">
+              <span>Step {currentStep} of 5</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Progress Track */}
-      <div className="max-w-xl mx-auto w-full my-4 bg-[#E8DDD3] h-1.5 rounded-full overflow-hidden">
-        <div
-          className="bg-[#8B5E3C] h-full transition-all duration-300 rounded-full"
-          style={{ width: `${(step / 5) * 100}%` }}
-        />
-      </div>
-
-      {/* Main Card */}
-      <div className="max-w-xl mx-auto w-full bg-white rounded-3xl border border-[#E8DDD3] shadow-md p-6 sm:p-8 flex-1 flex flex-col justify-between my-2">
-        {step === 1 && (
-          <div className="space-y-6">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-[#8B5E3C]">
-                Step 1: Introduction
-              </span>
-              <h2 className="text-2xl font-extrabold text-[#2C211B] mt-1">
-                What is your puppy’s name?
-              </h2>
-              <p className="text-xs text-[#766A63] mt-1">
-                PupLume builds an individualized daily routine tailored to your puppy.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-2">
-                Puppy's Name
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Max, Luna, Milo"
-                className="w-full text-lg font-bold px-4 py-3 rounded-2xl border border-[#E8DDD3] bg-[#FFF9F2] text-[#2C211B] focus:bg-white focus:outline-none focus:border-[#8B5E3C]"
+        {/* Step Progress Bar */}
+        <div className="grid grid-cols-5 gap-2">
+          {[
+            { step: 1, label: 'Basics' },
+            { step: 2, label: 'Puppy Info' },
+            { step: 3, label: 'Photo' },
+            { step: 4, label: 'Timings' },
+            { step: 5, label: 'Routine' }
+          ].map((item) => (
+            <div key={item.step} className="flex flex-col gap-1">
+              <div
+                className={`h-1.5 rounded-full transition-all ${
+                  currentStep >= item.step ? 'bg-[#8B5E3C]' : 'bg-[#E8DDD3]'
+                }`}
               />
+              <span className={`text-[10px] font-bold text-center hidden sm:block ${
+                currentStep === item.step ? 'text-[#8B5E3C]' : 'text-[#A69B93]'
+              }`}>
+                {item.label}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* STEP 1: Owner Name & Puppy Name */}
+        {currentStep === 1 && (
+          <div className="bg-white rounded-3xl border border-[#E8DDD3] p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#F3E7DA] text-[#8B5E3C] flex items-center justify-center shrink-0">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-[#2C211B]">
+                  Welcome to PupLume! Let&apos;s get acquainted.
+                </h2>
+                <p className="text-xs text-[#766A63] mt-1 leading-relaxed">
+                  I&apos;m your AI Routine Architect. I build your puppy&apos;s real daily schedule based on your household&apos;s actual hours—with zero fake filler data.
+                </p>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-2">
-                Choose or customize avatar
-              </label>
-              <div className="grid grid-cols-3 gap-2.5">
-                {PUPPY_PHOTO_PRESETS.map((preset) => (
-                  <div
-                    key={preset.label}
-                    onClick={() => {
-                      setPhotoUrl(preset.url);
-                      if (breed === 'Golden Retriever' && preset.label !== 'Golden Retriever') {
-                        setBreed(preset.label);
-                      }
-                    }}
-                    className={`relative rounded-2xl overflow-hidden border-2 cursor-pointer aspect-square group transition-all ${
-                      photoUrl === preset.url
-                        ? 'border-[#8B5E3C] shadow-sm ring-2 ring-[#8B5E3C]/20'
-                        : 'border-[#E8DDD3] hover:border-[#8B5E3C]/50 opacity-80 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
-                    <div className="absolute inset-x-0 bottom-0 bg-[#2C211B]/60 py-1 text-center text-[10px] text-white font-medium truncate px-1">
-                      {preset.label}
-                    </div>
-                  </div>
-                ))}
+            <div className="space-y-4 pt-2">
+              <div>
+                <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-1.5">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="e.g. Alex, Sarah, Michael"
+                  className="w-full p-3.5 bg-[#FAF6F0] border border-[#E8DDD3] rounded-2xl text-sm font-semibold text-[#2C211B] focus:outline-none focus:ring-2 focus:ring-[#8B5E3C]"
+                />
               </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-1.5">
+                  What is your puppy&apos;s name?
+                </label>
+                <input
+                  type="text"
+                  value={puppyName}
+                  onChange={(e) => setPuppyName(e.target.value)}
+                  placeholder="e.g. Bella, Rocky, Luna, Milo"
+                  className="w-full p-3.5 bg-[#FAF6F0] border border-[#E8DDD3] rounded-2xl text-sm font-semibold text-[#2C211B] focus:outline-none focus:ring-2 focus:ring-[#8B5E3C]"
+                />
+              </div>
+
+              {/* Quick Name Suggestions */}
+              <div>
+                <span className="text-[11px] font-bold text-[#766A63] mr-2">Popular names:</span>
+                <div className="inline-flex flex-wrap gap-1.5 mt-1">
+                  {['Rocky', 'Bella', 'Charlie', 'Luna', 'Milo', 'Daisy', 'Teddy'].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setPuppyName(n)}
+                      className="px-2.5 py-1 bg-[#FAF6F0] hover:bg-[#F3E7DA] border border-[#E8DDD3] rounded-lg text-xs font-bold text-[#5F3E29] transition-colors cursor-pointer"
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-[#E8DDD3] flex justify-end">
+              <Button
+                variant="primary"
+                onClick={() => setCurrentStep(2)}
+                disabled={!puppyName.trim()}
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+              >
+                Next: {puppyName.trim() || 'Puppy'}&apos;s Details
+              </Button>
             </div>
           </div>
         )}
 
-        {step === 2 && (
-          <div className="space-y-6">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-[#8B5E3C]">
-                Step 2: Breed & Age
-              </span>
-              <h2 className="text-2xl font-extrabold text-[#2C211B] mt-1">
-                Tell us about {name}’s breed & birthday
-              </h2>
-              <p className="text-xs text-[#766A63] mt-1">
-                Developmental milestones like bladder size, teething, and fear windows depend on exact age.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-2">
-                Breed / Mix
-              </label>
-              <input
-                type="text"
-                required
-                value={breed}
-                onChange={(e) => setBreed(e.target.value)}
-                placeholder="e.g. Golden Retriever, Mini Goldendoodle, Frenchie"
-                className="w-full px-4 py-3 rounded-2xl border border-[#E8DDD3] bg-[#FFF9F2] text-[#2C211B] focus:bg-white focus:outline-none focus:border-[#8B5E3C]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-2">
-                Birth Date
-              </label>
-              <input
-                type="date"
-                required
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-[#E8DDD3] bg-[#FFF9F2] text-[#2C211B] focus:bg-white focus:outline-none focus:border-[#8B5E3C]"
-              />
-              <div className="mt-2 text-xs font-semibold text-[#8B5E3C] flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4" />
-                <span>Current developmental age: <strong>{calculateWeeks(birthDate)} weeks old</strong></span>
+        {/* STEP 2: Breed, Sex & Strict Age Validation */}
+        {currentStep === 2 && (
+          <div className="bg-white rounded-3xl border border-[#E8DDD3] p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#F3E7DA] text-[#8B5E3C] flex items-center justify-center shrink-0">
+                <Dog className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-[#2C211B]">
+                  Tell us about {puppyName || 'your puppy'}
+                </h2>
+                <p className="text-xs text-[#766A63] mt-1">
+                  Daily sleep thresholds, potty timing, and exercise depend on age and breed size.
+                </p>
               </div>
             </div>
-          </div>
-        )}
 
-        {step === 3 && (
-          <div className="space-y-6">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-[#8B5E3C]">
-                Step 3: Physical Details
-              </span>
-              <h2 className="text-2xl font-extrabold text-[#2C211B] mt-1">
-                {name}’s weight & sex
-              </h2>
-              <p className="text-xs text-[#766A63] mt-1">
-                Helps calculate accurate medication dosages and daily calorie targets.
-              </p>
-            </div>
+            <div className="space-y-5 pt-2">
+              {/* Breed */}
+              <div>
+                <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-1.5">
+                  Breed
+                </label>
+                <input
+                  type="text"
+                  value={breed}
+                  onChange={(e) => setBreed(e.target.value)}
+                  placeholder="e.g. Golden Retriever, French Bulldog, Lab"
+                  className="w-full p-3.5 bg-[#FAF6F0] border border-[#E8DDD3] rounded-2xl text-sm font-semibold text-[#2C211B] focus:outline-none focus:ring-2 focus:ring-[#8B5E3C]"
+                />
 
-            <div>
-              <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-2">
-                Sex
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { id: 'male', label: 'Male' },
-                  { id: 'female', label: 'Female' }
-                ].map(item => (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {COMMON_BREEDS.slice(0, 6).map((b) => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => setBreed(b)}
+                      className="px-2.5 py-1 bg-[#FAF6F0] hover:bg-[#F3E7DA] border border-[#E8DDD3] rounded-lg text-xs font-medium text-[#5F3E29] transition-colors cursor-pointer"
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sex Toggle */}
+              <div>
+                <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-1.5">
+                  Sex
+                </label>
+                <div className="grid grid-cols-2 gap-3 max-w-sm">
                   <button
                     type="button"
-                    key={item.id}
-                    onClick={() => setSex(item.id as any)}
-                    className={`py-3 px-4 rounded-2xl border text-sm font-bold cursor-pointer transition-all ${
-                      sex === item.id
-                        ? 'bg-[#8B5E3C] text-white border-[#8B5E3C] shadow-xs'
-                        : 'bg-[#FFF9F2] text-[#2C211B] border-[#E8DDD3] hover:bg-[#F3E7DA]'
+                    onClick={() => setSex('male')}
+                    className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      sex === 'male'
+                        ? 'bg-[#8B5E3C] text-white border-[#8B5E3C] shadow-2xs'
+                        : 'bg-[#FAF6F0] text-[#2C211B] border-[#E8DDD3] hover:bg-[#F3E7DA]'
                     }`}
                   >
-                    {item.label}
+                    <span>Boy (Male)</span>
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => setSex('female')}
+                    className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      sex === 'female'
+                        ? 'bg-[#8B5E3C] text-white border-[#8B5E3C] shadow-2xs'
+                        : 'bg-[#FAF6F0] text-[#2C211B] border-[#E8DDD3] hover:bg-[#F3E7DA]'
+                    }`}
+                  >
+                    <span>Girl (Female)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Strict Age Validation */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider">
+                    Age
+                  </label>
+                  <span className="text-[11px] text-[#766A63]">
+                    Most puppies start between 8–16 weeks
+                  </span>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={ageValue}
+                    onChange={(e) => handleAgeChange(e.target.value, ageUnit)}
+                    placeholder={ageUnit === 'weeks' ? 'e.g. 10' : ageUnit === 'months' ? 'e.g. 3' : 'e.g. 1'}
+                    className={`flex-1 p-3.5 bg-[#FAF6F0] border rounded-2xl text-sm font-semibold text-[#2C211B] focus:outline-none focus:ring-2 ${
+                      ageValidationError
+                        ? 'border-rose-400 focus:ring-rose-400'
+                        : 'border-[#E8DDD3] focus:ring-[#8B5E3C]'
+                    }`}
+                  />
+
+                  <div className="flex rounded-2xl border border-[#E8DDD3] bg-[#FAF6F0] p-1">
+                    {(['weeks', 'months', 'years'] as const).map((unit) => (
+                      <button
+                        key={unit}
+                        type="button"
+                        onClick={() => handleAgeChange(ageValue, unit)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer ${
+                          ageUnit === unit
+                            ? 'bg-[#8B5E3C] text-white shadow-2xs'
+                            : 'text-[#766A63] hover:text-[#2C211B]'
+                        }`}
+                      >
+                        {unit}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Validation Error Banner */}
+                {ageValidationError && (
+                  <div className="mt-3 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start gap-2.5">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Age Check:</strong> {ageValidationError}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-2">
-                Current Weight (lbs)
-              </label>
-              <input
-                type="number"
-                step="0.5"
-                required
-                value={weightLbs}
-                onChange={(e) => setWeightLbs(e.target.value)}
-                placeholder="24.2"
-                className="w-full px-4 py-3 rounded-2xl border border-[#E8DDD3] bg-[#FFF9F2] text-[#2C211B] focus:bg-white focus:outline-none focus:border-[#8B5E3C]"
-              />
+            <div className="pt-4 border-t border-[#E8DDD3] flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(1)}
+                leftIcon={<ArrowLeft className="w-4 h-4" />}
+              >
+                Back
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => setCurrentStep(3)}
+                disabled={!breed.trim() || !ageValue.trim() || !!ageValidationError}
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+              >
+                Next: Photo
+              </Button>
             </div>
           </div>
         )}
 
-        {step === 4 && (
-          <div className="space-y-6">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-[#8B5E3C]">
-                Step 4: Temperament & Goals
-              </span>
-              <h2 className="text-2xl font-extrabold text-[#2C211B] mt-1">
-                What are your biggest priorities right now?
-              </h2>
-              <p className="text-xs text-[#766A63] mt-1">
-                PupLume will adapt today's daily checklist to focus on this area.
-              </p>
+        {/* STEP 3: Puppy Photo (Cloudinary Upload) */}
+        {currentStep === 3 && (
+          <div className="bg-white rounded-3xl border border-[#E8DDD3] p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#F3E7DA] text-[#8B5E3C] flex items-center justify-center shrink-0">
+                <Camera className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-[#2C211B]">
+                  Add a picture of {puppyName || 'your puppy'}
+                </h2>
+                <p className="text-xs text-[#766A63] mt-1">
+                  Upload a photo to personalize the dashboard and health journals. You can also skip and add one later.
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              {[
-                'House Training & Potty Reliability',
-                'Puppy Biting & Needle Teeth Redirection',
-                'Crate Training & Whine-Free Nights',
-                'Loose Leash Walking & Recall ("Rocket Come")',
-                '12-Window Socialization Acclimatization'
-              ].map((goal) => (
-                <div
-                  key={goal}
-                  onClick={() => setPrimaryFocus(goal)}
-                  className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
-                    primaryFocus === goal
-                      ? 'bg-[#FFF9F2] border-[#8B5E3C] shadow-xs font-bold text-[#2C211B]'
-                      : 'bg-white border-[#E8DDD3] text-[#766A63] hover:border-[#8B5E3C]/40'
-                  }`}
+            <div className="py-2">
+              <CloudinaryImageUploader
+                currentImageUrl={photoUrl}
+                onUploadSuccess={(url) => setPhotoUrl(url)}
+                folder="puplume/pets"
+                label={`Upload ${puppyName || 'Puppy'}'s Photo`}
+                sublabel="JPG, PNG, or WEBP (Max 25MB)"
+                variant="card"
+              />
+            </div>
+
+            <div className="pt-4 border-t border-[#E8DDD3] flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(2)}
+                leftIcon={<ArrowLeft className="w-4 h-4" />}
+              >
+                Back
+              </Button>
+              <div className="flex items-center gap-2">
+                {!photoUrl && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setCurrentStep(4)}
+                    className="text-xs text-[#766A63]"
+                  >
+                    Skip for Now
+                  </Button>
+                )}
+                <Button
+                  variant="primary"
+                  onClick={() => setCurrentStep(4)}
+                  rightIcon={<ArrowRight className="w-4 h-4" />}
                 >
-                  <span className="text-xs">{goal}</span>
-                  {primaryFocus === goal && (
-                    <span className="w-5 h-5 rounded-full bg-[#8B5E3C] text-white flex items-center justify-center">
-                      <Check className="w-3 h-3 stroke-[3]" />
-                    </span>
-                  )}
+                  Next: Schedule Timings
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Household Timings (The core user request) */}
+        {currentStep === 4 && (
+          <div className="bg-white rounded-3xl border border-[#E8DDD3] p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#F3E7DA] text-[#8B5E3C] flex items-center justify-center shrink-0">
+                <Clock className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-[#2C211B]">
+                  Customize Around Your Household Routine
+                </h2>
+                <p className="text-xs text-[#766A63] mt-1">
+                  {puppyName}&apos;s tasks are scheduled directly to match your family&apos;s actual wake-up, meal, and bedtimes.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              {/* Wake-Up Time */}
+              <div className="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8DDD3] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#2C211B] flex items-center gap-2">
+                    <Sun className="w-4 h-4 text-amber-500" /> Morning Wake-Up
+                  </span>
+                  <input
+                    type="text"
+                    value={wakeTime}
+                    onChange={(e) => setWakeTime(e.target.value)}
+                    className="w-24 text-right p-1.5 bg-white border border-[#E8DDD3] rounded-xl font-bold text-xs text-[#8B5E3C]"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['06:00 AM', '06:30 AM', '07:00 AM', '07:30 AM'].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setWakeTime(t)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                        wakeTime === t
+                          ? 'bg-[#8B5E3C] text-white'
+                          : 'bg-white text-[#766A63] border border-[#E8DDD3] hover:bg-[#F3E7DA]'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Breakfast Time */}
+              <div className="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8DDD3] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#2C211B] flex items-center gap-2">
+                    <Utensils className="w-4 h-4 text-orange-500" /> Breakfast Time
+                  </span>
+                  <input
+                    type="text"
+                    value={breakfastTime}
+                    onChange={(e) => setBreakfastTime(e.target.value)}
+                    className="w-24 text-right p-1.5 bg-white border border-[#E8DDD3] rounded-xl font-bold text-xs text-[#8B5E3C]"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['06:30 AM', '07:00 AM', '07:30 AM', '08:00 AM'].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setBreakfastTime(t)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                        breakfastTime === t
+                          ? 'bg-[#8B5E3C] text-white'
+                          : 'bg-white text-[#766A63] border border-[#E8DDD3] hover:bg-[#F3E7DA]'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Lunch Time */}
+              <div className="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8DDD3] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#2C211B] flex items-center gap-2">
+                    <Utensils className="w-4 h-4 text-orange-400" /> Lunch Time
+                  </span>
+                  <input
+                    type="text"
+                    value={lunchTime}
+                    onChange={(e) => setLunchTime(e.target.value)}
+                    className="w-24 text-right p-1.5 bg-white border border-[#E8DDD3] rounded-xl font-bold text-xs text-[#8B5E3C]"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['12:00 PM', '12:30 PM', '01:00 PM'].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setLunchTime(t)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                        lunchTime === t
+                          ? 'bg-[#8B5E3C] text-white'
+                          : 'bg-white text-[#766A63] border border-[#E8DDD3] hover:bg-[#F3E7DA]'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dinner Time */}
+              <div className="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8DDD3] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#2C211B] flex items-center gap-2">
+                    <Utensils className="w-4 h-4 text-amber-600" /> Dinner Time
+                  </span>
+                  <input
+                    type="text"
+                    value={dinnerTime}
+                    onChange={(e) => setDinnerTime(e.target.value)}
+                    className="w-24 text-right p-1.5 bg-white border border-[#E8DDD3] rounded-xl font-bold text-xs text-[#8B5E3C]"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM'].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setDinnerTime(t)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                        dinnerTime === t
+                          ? 'bg-[#8B5E3C] text-white'
+                          : 'bg-white text-[#766A63] border border-[#E8DDD3] hover:bg-[#F3E7DA]'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bedtime & Night Potty */}
+              <div className="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8DDD3] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#2C211B] flex items-center gap-2">
+                    <Moon className="w-4 h-4 text-indigo-500" /> Bedtime & Final Night Potty
+                  </span>
+                  <input
+                    type="text"
+                    value={bedtime}
+                    onChange={(e) => setBedtime(e.target.value)}
+                    className="w-24 text-right p-1.5 bg-white border border-[#E8DDD3] rounded-xl font-bold text-xs text-[#8B5E3C]"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['09:30 PM', '10:00 PM', '10:30 PM', '11:00 PM'].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setBedtime(t)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                        bedtime === t
+                          ? 'bg-[#8B5E3C] text-white'
+                          : 'bg-white text-[#766A63] border border-[#E8DDD3] hover:bg-[#F3E7DA]'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Training Focus */}
+              <div>
+                <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-1.5">
+                  Primary Training Focus
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {[
+                    'Potty Training & Housebreaking',
+                    'Crate Sleeping & Separation Ease',
+                    'Biting & Chewing Management',
+                    'Loose-Leash Walking & Recall'
+                  ].map((focus) => (
+                    <button
+                      key={focus}
+                      type="button"
+                      onClick={() => setTrainingFocus(focus)}
+                      className={`p-3 rounded-xl border text-left font-bold transition-all cursor-pointer ${
+                        trainingFocus === focus
+                          ? 'bg-[#8B5E3C] text-white border-[#8B5E3C] shadow-2xs'
+                          : 'bg-[#FAF6F0] text-[#2C211B] border-[#E8DDD3] hover:bg-[#F3E7DA]'
+                      }`}
+                    >
+                      {focus}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-[#E8DDD3] flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(3)}
+                leftIcon={<ArrowLeft className="w-4 h-4" />}
+              >
+                Back
+              </Button>
+              <Button
+                variant="primary"
+                onClick={generatePersonalizedRoutine}
+                rightIcon={<Sparkles className="w-4 h-4" />}
+              >
+                Generate {puppyName || 'Puppy'}&apos;s Routine
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 5: AI Generated Daily Routine Review */}
+        {currentStep === 5 && (
+          <div className="bg-white rounded-3xl border border-[#E8DDD3] p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#F3E7DA] text-[#8B5E3C] flex items-center justify-center shrink-0">
+                  <Award className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-[#2C211B]">
+                    {puppyName}&apos;s Personalized Daily Routine
+                  </h2>
+                  <p className="text-xs text-[#766A63] mt-1">
+                    Generated around your wake-up ({wakeTime}), meal times, and bedtime ({bedtime}). Zero placeholder data!
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-right hidden sm:block">
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                  {generatedTasks.length} Tasks Scheduled
+                </span>
+              </div>
+            </div>
+
+            {/* Routine Tasks List */}
+            <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+              {generatedTasks.map((t, index) => (
+                <div
+                  key={index}
+                  className="flex items-start gap-3 p-3.5 rounded-2xl bg-[#FAF6F0] border border-[#E8DDD3]"
+                >
+                  <div className="w-16 shrink-0 text-center bg-white px-2 py-1.5 rounded-xl border border-[#E8DDD3]">
+                    <span className="text-xs font-black text-[#8B5E3C] block">{t.time}</span>
+                    <span className="text-[10px] text-[#766A63] uppercase font-bold">{t.durationMin}m</span>
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-[#2C211B]">{t.title}</h4>
+                      <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-md bg-white border border-[#E8DDD3] text-[#766A63]">
+                        {t.category}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#766A63] mt-0.5 leading-relaxed">
+                      {t.description}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-2">
-                Temperament notes
-              </label>
-              <input
-                type="text"
-                value={temperament}
-                onChange={(e) => setTemperament(e.target.value)}
-                placeholder="e.g. Friendly, playful, food-driven, prone to evening zoomies"
-                className="w-full px-4 py-2.5 rounded-2xl border border-[#E8DDD3] bg-[#FFF9F2] text-xs text-[#2C211B] focus:bg-white focus:outline-none focus:border-[#8B5E3C]"
-              />
+            <div className="pt-4 border-t border-[#E8DDD3] flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(4)}
+                leftIcon={<ArrowLeft className="w-4 h-4" />}
+                disabled={isSaving}
+              >
+                Adjust Hours
+              </Button>
+
+              <Button
+                variant="primary"
+                onClick={handleFinalActivation}
+                disabled={isSaving}
+                leftIcon={isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              >
+                {isSaving ? 'Activating Routine...' : `Activate Routine & Go to Dashboard`}
+              </Button>
             </div>
           </div>
         )}
-
-        {step === 5 && (
-          <div className="space-y-6">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-[#8B5E3C]">
-                Step 5: Nutrition & Vet
-              </span>
-              <h2 className="text-2xl font-extrabold text-[#2C211B] mt-1">
-                Final Details for {name}
-              </h2>
-              <p className="text-xs text-[#766A63] mt-1">
-                Connect your food and clinic so PupLume can track refills and appointments.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-2">
-                Puppy Food Brand / Formula
-              </label>
-              <input
-                type="text"
-                value={foodBrand}
-                onChange={(e) => setFoodBrand(e.target.value)}
-                placeholder="e.g. Purina Pro Plan Large Breed Puppy"
-                className="w-full px-4 py-3 rounded-2xl border border-[#E8DDD3] bg-[#FFF9F2] text-[#2C211B] focus:bg-white focus:outline-none focus:border-[#8B5E3C]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-2">
-                Primary Vet Clinic (optional)
-              </label>
-              <input
-                type="text"
-                value={vetClinic}
-                onChange={(e) => setVetClinic(e.target.value)}
-                placeholder="e.g. City Vet Animal Hospital"
-                className="w-full px-4 py-3 rounded-2xl border border-[#E8DDD3] bg-[#FFF9F2] text-[#2C211B] focus:bg-white focus:outline-none focus:border-[#8B5E3C]"
-              />
-            </div>
-
-            <div className="p-4 rounded-2xl bg-[#FFF9F2] border border-[#E8DDD3] text-xs text-[#5F3E29] flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-[#8B5E3C] flex-shrink-0 mt-0.5" />
-              <div>
-                <strong>Ready for your Day 1 Plan!</strong>
-                <p className="text-[#766A63] mt-0.5 leading-relaxed">
-                  PupLume will now generate an age-appropriate schedule combining potty countdowns, structured sleep, and 5-minute training drills for {name}.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Buttons */}
-        <div className="flex items-center justify-between gap-3 pt-6 border-t border-[#E8DDD3] mt-6">
-          <Button
-            type="button"
-            variant="outline"
-            size="md"
-            onClick={handleBack}
-            leftIcon={<ArrowLeft className="w-4 h-4" />}
-          >
-            {step === 1 ? 'Cancel' : 'Back'}
-          </Button>
-
-          <Button
-            type="button"
-            variant="primary"
-            size="md"
-            isLoading={isGeneratingPlan}
-            onClick={handleNext}
-            rightIcon={step < 5 ? <ArrowRight className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-          >
-            {step < 5 ? 'Continue' : `Build ${name}'s Plan`}
-          </Button>
-        </div>
       </div>
     </div>
   );

@@ -1,19 +1,40 @@
 import { ConvexReactClient } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { PuppyProfile, TaskItem, PottyLog, FeedingLog, SleepLog, WalkLog, VaccinationRecord, MedicationRecord, VetAppointment, ExpenseRecord, DocumentRecord, BehaviorIncident, GroomingTask, JournalEntry } from "../types";
+import {
+  PuppyProfile,
+  TaskItem,
+  PottyLog,
+  FeedingLog,
+  SleepLog,
+  WalkLog,
+  VaccinationRecord,
+  MedicationRecord,
+  VetAppointment,
+  ExpenseRecord,
+  DocumentRecord,
+  BehaviorIncident,
+  GroomingTask,
+  JournalEntry,
+} from "../types";
 
-const convexUrl = import.meta.env.VITE_CONVEX_URL || "https://energetic-partridge-407.convex.cloud";
+const convexUrl =
+  import.meta.env.VITE_CONVEX_URL ||
+  "https://energetic-partridge-407.convex.cloud";
 
 export const convex = new ConvexReactClient(convexUrl);
 
-export const CONVEX_DEPLOYMENT = 
-  import.meta.env.CONVEX_DEPLOYMENT || 
+export const CONVEX_DEPLOYMENT =
+  import.meta.env.CONVEX_DEPLOYMENT ||
   "dev:energetic-partridge-407|eyJ2MiI6ImIyZjQ0MTY2YjEwYjQzMThiODNhNThlZWMyYTJmMGI0In0=";
 
 // Async background mutation helpers to Convex
-export async function syncPuppyToConvex(puppy: PuppyProfile): Promise<boolean> {
+export async function syncPuppyToConvex(
+  puppy: PuppyProfile,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.puppies.savePuppy, {
+      userId,
       id: puppy.id,
       name: puppy.name,
       breed: puppy.breed,
@@ -41,9 +62,13 @@ export async function syncPuppyToConvex(puppy: PuppyProfile): Promise<boolean> {
   }
 }
 
-export async function syncTaskToConvex(task: TaskItem): Promise<boolean> {
+export async function syncTaskToConvex(
+  task: TaskItem,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.tasks.createTask, {
+      userId,
       puppyId: task.puppyId,
       title: task.title,
       category: task.category,
@@ -61,9 +86,14 @@ export async function syncTaskToConvex(task: TaskItem): Promise<boolean> {
   }
 }
 
-export async function toggleTaskInConvex(title: string, completed: boolean): Promise<boolean> {
+export async function toggleTaskInConvex(
+  title: string,
+  completed: boolean,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.tasks.toggleTask, {
+      userId,
       title,
       completed,
     });
@@ -74,9 +104,13 @@ export async function toggleTaskInConvex(title: string, completed: boolean): Pro
   }
 }
 
-export async function skipTaskInConvex(title: string): Promise<boolean> {
+export async function skipTaskInConvex(
+  title: string,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.tasks.skipTask, {
+      userId,
       title,
     });
     return true;
@@ -86,9 +120,13 @@ export async function skipTaskInConvex(title: string): Promise<boolean> {
   }
 }
 
-export async function syncPottyLogToConvex(log: PottyLog): Promise<boolean> {
+export async function syncPottyLogToConvex(
+  log: PottyLog,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.potty.addPottyLog, {
+      userId,
       puppyId: log.puppyId,
       type: log.type,
       location: log.location,
@@ -102,9 +140,13 @@ export async function syncPottyLogToConvex(log: PottyLog): Promise<boolean> {
   }
 }
 
-export async function syncFeedingLogToConvex(log: FeedingLog): Promise<boolean> {
+export async function syncFeedingLogToConvex(
+  log: FeedingLog,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.feeding.addFeedingLog, {
+      userId,
       puppyId: log.puppyId,
       mealType: log.mealType,
       amountCups: log.amountCups,
@@ -119,9 +161,13 @@ export async function syncFeedingLogToConvex(log: FeedingLog): Promise<boolean> 
   }
 }
 
-export async function syncSleepLogToConvex(log: SleepLog): Promise<boolean> {
+export async function syncSleepLogToConvex(
+  log: SleepLog,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.sleep.addSleepLog, {
+      userId,
       puppyId: log.puppyId,
       type: log.type,
       startTime: log.startTime,
@@ -136,9 +182,13 @@ export async function syncSleepLogToConvex(log: SleepLog): Promise<boolean> {
   }
 }
 
-export async function syncWalkLogToConvex(log: WalkLog): Promise<boolean> {
+export async function syncWalkLogToConvex(
+  log: WalkLog,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.walk.addWalkLog, {
+      userId,
       puppyId: log.puppyId,
       durationMin: log.durationMin,
       distanceMiles: log.distanceMiles,
@@ -156,9 +206,13 @@ export async function syncWalkLogToConvex(log: WalkLog): Promise<boolean> {
   }
 }
 
-export async function syncVaccinationToConvex(v: VaccinationRecord): Promise<boolean> {
+export async function syncVaccinationToConvex(
+  v: VaccinationRecord,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.health.addVaccination, {
+      userId,
       puppyId: v.puppyId,
       name: v.vaccineName,
       vaccineName: v.vaccineName,
@@ -178,9 +232,13 @@ export async function syncVaccinationToConvex(v: VaccinationRecord): Promise<boo
   }
 }
 
-export async function syncMedicationToConvex(m: MedicationRecord): Promise<boolean> {
+export async function syncMedicationToConvex(
+  m: MedicationRecord,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.health.addMedication, {
+      userId,
       puppyId: m.puppyId,
       name: m.name,
       dosage: m.dosage,
@@ -197,9 +255,13 @@ export async function syncMedicationToConvex(m: MedicationRecord): Promise<boole
   }
 }
 
-export async function syncAppointmentToConvex(a: VetAppointment): Promise<boolean> {
+export async function syncAppointmentToConvex(
+  a: VetAppointment,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.health.addAppointment, {
+      userId,
       puppyId: a.puppyId,
       title: a.title,
       clinic: a.clinic,
@@ -217,9 +279,13 @@ export async function syncAppointmentToConvex(a: VetAppointment): Promise<boolea
   }
 }
 
-export async function syncExpenseToConvex(e: ExpenseRecord): Promise<boolean> {
+export async function syncExpenseToConvex(
+  e: ExpenseRecord,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.expenses.addExpense, {
+      userId,
       puppyId: e.puppyId,
       title: e.title,
       category: e.category,
@@ -235,15 +301,20 @@ export async function syncExpenseToConvex(e: ExpenseRecord): Promise<boolean> {
   }
 }
 
-export async function syncDocumentToConvex(d: DocumentRecord): Promise<boolean> {
+export async function syncDocumentToConvex(
+  d: DocumentRecord,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.documents.addDocument, {
+      userId,
       puppyId: d.puppyId,
       title: d.title,
       category: d.category,
       date: d.date,
       fileType: d.fileType,
       fileSize: d.fileSize,
+      fileUrl: d.fileUrl,
       notes: d.notes,
     });
     return true;
@@ -253,9 +324,12 @@ export async function syncDocumentToConvex(d: DocumentRecord): Promise<boolean> 
   }
 }
 
-export async function removeDocumentFromConvex(id: string): Promise<boolean> {
+export async function removeDocumentFromConvex(
+  id: string,
+  userId?: string
+): Promise<boolean> {
   try {
-    await convex.mutation(api.documents.deleteDocument, { id });
+    await convex.mutation(api.documents.deleteDocument, { id, userId });
     return true;
   } catch (err) {
     console.debug("[Convex] removeDocument note:", err);
@@ -263,9 +337,13 @@ export async function removeDocumentFromConvex(id: string): Promise<boolean> {
   }
 }
 
-export async function syncBehaviorLogToConvex(b: BehaviorIncident): Promise<boolean> {
+export async function syncBehaviorLogToConvex(
+  b: BehaviorIncident,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.behavior.addBehaviorLog, {
+      userId,
       puppyId: b.puppyId,
       behaviorType: b.behaviorType,
       timestamp: b.timestamp,
@@ -281,11 +359,16 @@ export async function syncBehaviorLogToConvex(b: BehaviorIncident): Promise<bool
   }
 }
 
-export async function syncGroomingTasksToConvex(puppyId: string, tasks: GroomingTask[]): Promise<boolean> {
+export async function syncGroomingTasksToConvex(
+  puppyId: string,
+  tasks: GroomingTask[],
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.grooming.saveGroomingTasks, {
+      userId,
       puppyId,
-      tasks: tasks.map(t => ({
+      tasks: tasks.map((t) => ({
         type: t.type,
         label: t.label,
         lastDone: t.lastDone,
@@ -300,9 +383,14 @@ export async function syncGroomingTasksToConvex(puppyId: string, tasks: Grooming
   }
 }
 
-export async function syncSocializationToConvex(puppyId: string, item: any): Promise<boolean> {
+export async function syncSocializationToConvex(
+  puppyId: string,
+  item: any,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.socialization.updateSocializationStatus, {
+      userId,
       puppyId,
       category: item.category || "General",
       title: item.title,
@@ -318,9 +406,13 @@ export async function syncSocializationToConvex(puppyId: string, item: any): Pro
   }
 }
 
-export async function syncJournalEntryToConvex(j: JournalEntry): Promise<boolean> {
+export async function syncJournalEntryToConvex(
+  j: JournalEntry,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.journal.addJournalEntry, {
+      userId,
       puppyId: j.puppyId,
       title: j.title,
       date: j.date,
@@ -335,9 +427,16 @@ export async function syncJournalEntryToConvex(j: JournalEntry): Promise<boolean
   }
 }
 
-export async function syncTrainingLessonToConvex(puppyId: string, lessonId: string, completed: boolean, mastered: boolean): Promise<boolean> {
+export async function syncTrainingLessonToConvex(
+  puppyId: string,
+  lessonId: string,
+  completed: boolean,
+  mastered: boolean,
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.training.updateLessonStatus, {
+      userId,
       puppyId,
       lessonId,
       completed,
@@ -350,16 +449,22 @@ export async function syncTrainingLessonToConvex(puppyId: string, lessonId: stri
   }
 }
 
-export async function syncSettingsToConvex(settings: {
-  pottyAlerts: boolean;
-  feedingAlerts: boolean;
-  trainingAlerts: boolean;
-  medAlerts: boolean;
-  units: string;
-  activePuppyId?: string;
-}): Promise<boolean> {
+export async function syncSettingsToConvex(
+  settings: {
+    pottyAlerts: boolean;
+    feedingAlerts: boolean;
+    trainingAlerts: boolean;
+    medAlerts: boolean;
+    units: string;
+    activePuppyId?: string;
+  },
+  userId?: string
+): Promise<boolean> {
   try {
-    await convex.mutation(api.settings.saveSettings, settings);
+    await convex.mutation(api.settings.saveSettings, {
+      ...settings,
+      userId,
+    });
     return true;
   } catch (err) {
     console.debug("[Convex] syncSettings note:", err);
@@ -367,16 +472,22 @@ export async function syncSettingsToConvex(settings: {
   }
 }
 
-export async function syncFamilyMemberToConvex(m: {
-  puppyId?: string;
-  name: string;
-  email: string;
-  role: string;
-  avatarUrl?: string;
-  dateAdded: string;
-}): Promise<boolean> {
+export async function syncFamilyMemberToConvex(
+  m: {
+    puppyId?: string;
+    name: string;
+    email: string;
+    role: string;
+    avatarUrl?: string;
+    dateAdded: string;
+  },
+  userId?: string
+): Promise<boolean> {
   try {
-    await convex.mutation(api.family.addFamilyMember, m);
+    await convex.mutation(api.family.addFamilyMember, {
+      ...m,
+      userId,
+    });
     return true;
   } catch (err) {
     console.debug("[Convex] syncFamilyMember note:", err);
@@ -384,9 +495,12 @@ export async function syncFamilyMemberToConvex(m: {
   }
 }
 
-export async function removeFamilyMemberFromConvex(id: string): Promise<boolean> {
+export async function removeFamilyMemberFromConvex(
+  id: string,
+  userId?: string
+): Promise<boolean> {
   try {
-    await convex.mutation(api.family.deleteFamilyMember, { id });
+    await convex.mutation(api.family.deleteFamilyMember, { id, userId });
     return true;
   } catch (err) {
     console.debug("[Convex] removeFamilyMember note:", err);
@@ -394,9 +508,12 @@ export async function removeFamilyMemberFromConvex(id: string): Promise<boolean>
   }
 }
 
-export async function syncNotificationReadToConvex(id: string): Promise<boolean> {
+export async function syncNotificationReadToConvex(
+  id: string,
+  userId?: string
+): Promise<boolean> {
   try {
-    await convex.mutation(api.notifications.markNotificationRead, { id });
+    await convex.mutation(api.notifications.markNotificationRead, { id, userId });
     return true;
   } catch (err) {
     console.debug("[Convex] syncNotificationRead note:", err);
@@ -404,9 +521,11 @@ export async function syncNotificationReadToConvex(id: string): Promise<boolean>
   }
 }
 
-export async function syncAllNotificationsReadToConvex(): Promise<boolean> {
+export async function syncAllNotificationsReadToConvex(
+  userId?: string
+): Promise<boolean> {
   try {
-    await convex.mutation(api.notifications.markAllNotificationsRead, {});
+    await convex.mutation(api.notifications.markAllNotificationsRead, { userId });
     return true;
   } catch (err) {
     console.debug("[Convex] syncAllNotificationsRead note:", err);
@@ -414,9 +533,14 @@ export async function syncAllNotificationsReadToConvex(): Promise<boolean> {
   }
 }
 
-export async function syncAIMessageToConvex(puppyId: string, msg: { sender: string; text: string; timestamp: string }): Promise<boolean> {
+export async function syncAIMessageToConvex(
+  puppyId: string,
+  msg: { sender: string; text: string; timestamp: string },
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.ai.addAIMessage, {
+      userId,
       puppyId,
       sender: msg.sender,
       text: msg.text,
@@ -429,15 +553,65 @@ export async function syncAIMessageToConvex(puppyId: string, msg: { sender: stri
   }
 }
 
-export async function syncAIMessagesToConvex(puppyId: string, messages: { sender: string; text: string; timestamp: string }[]): Promise<boolean> {
+export async function syncAIMessagesToConvex(
+  puppyId: string,
+  messages: { sender: string; text: string; timestamp: string }[],
+  userId?: string
+): Promise<boolean> {
   try {
     await convex.mutation(api.ai.saveAIMessages, {
+      userId,
       puppyId,
       messages,
     });
     return true;
   } catch (err) {
     console.debug("[Convex] syncAIMessages note:", err);
+    return false;
+  }
+}
+
+export async function completeAIOnboardingInConvex(
+  puppy: {
+    name: string;
+    breed: string;
+    birthDate: string;
+    sex: string;
+    weightLbs: number;
+    photoUrl: string;
+    temperament?: string;
+    dietaryRestrictions?: string;
+    favoriteTreat?: string;
+  },
+  tasks: Array<{
+    title: string;
+    category: string;
+    time: string;
+    durationMin: number;
+    period: string;
+    description: string;
+  }>,
+  userId?: string
+): Promise<boolean> {
+  try {
+    await convex.mutation(api.app.completeAIOnboarding, {
+      userId,
+      puppy,
+      tasks,
+    });
+    return true;
+  } catch (err) {
+    console.debug("[Convex] completeAIOnboarding note:", err);
+    return false;
+  }
+}
+
+export async function clearUserDataInConvex(userId?: string): Promise<boolean> {
+  try {
+    await convex.mutation(api.app.clearUserData, { userId });
+    return true;
+  } catch (err) {
+    console.debug("[Convex] clearUserData note:", err);
     return false;
   }
 }

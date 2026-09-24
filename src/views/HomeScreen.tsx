@@ -83,21 +83,39 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setTasks([...updated]);
   };
 
+  const getTaskPeriod = (t: TaskItem): 'morning' | 'afternoon' | 'evening' | 'night' => {
+    const raw = (t.period || '').toLowerCase().trim();
+    if (raw === 'morning') return 'morning';
+    if (raw === 'afternoon') return 'afternoon';
+    if (raw === 'evening') return 'evening';
+    if (raw === 'night') return 'night';
+    const timeStr = (t.time || '').toLowerCase();
+    const isPM = timeStr.includes('pm');
+    const match = timeStr.match(/(\d+):?(\d*)/);
+    let hour = match ? parseInt(match[1], 10) : 10;
+    if (isPM && hour < 12) hour += 12;
+    if (!isPM && hour === 12) hour = 0;
+    if (hour >= 6 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 17) return 'afternoon';
+    if (hour >= 17 && hour < 21) return 'evening';
+    return 'night';
+  };
+
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
-    const added = storage.addTask({
+    storage.addTask({
       puppyId: puppy.id,
-      title: newTaskTitle,
+      title: newTaskTitle.trim(),
       category: newTaskCategory,
-      time: newTaskTime,
+      time: newTaskTime.trim() || '10:00 AM',
       durationMin: parseInt(newTaskDuration, 10) || 15,
       completed: false,
       skipped: false,
       period: newTaskPeriod,
       date: new Date().toISOString().split('T')[0]
     });
-    setTasks(storage.getTasks());
+    setTasks([...storage.getTasks()]);
     setIsAddTaskOpen(false);
     setNewTaskTitle('');
   };
@@ -402,7 +420,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
         ) : (
           periods.map((period) => {
-            const periodTasks = tasks.filter(t => t.period === period.id);
+            const periodTasks = tasks.filter(t => getTaskPeriod(t) === period.id);
             if (periodTasks.length === 0) return null;
 
             return (

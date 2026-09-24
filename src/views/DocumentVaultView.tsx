@@ -7,12 +7,15 @@ import {
   Trash2, 
   ShieldCheck, 
   Eye, 
-  Calendar 
+  Calendar,
+  Cloud,
+  ExternalLink 
 } from 'lucide-react';
 import { PuppyProfile, DocumentRecord } from '../types';
 import { storage } from '../lib/storage';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { CloudinaryImageUploader } from '../components/ui/CloudinaryImageUploader';
 
 interface DocumentVaultViewProps {
   puppy: PuppyProfile;
@@ -33,6 +36,7 @@ export const DocumentVaultView: React.FC<DocumentVaultViewProps> = ({ puppy }) =
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<any>('vaccination');
   const [notes, setNotes] = useState('');
+  const [fileUrl, setFileUrl] = useState('');
 
   const handleUpload = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,14 +47,16 @@ export const DocumentVaultView: React.FC<DocumentVaultViewProps> = ({ puppy }) =
       title,
       category,
       date: new Date().toISOString().split('T')[0],
-      fileType: 'PDF',
-      fileSize: '1.2 MB',
+      fileType: fileUrl ? (fileUrl.toLowerCase().endsWith('.pdf') ? 'PDF' : 'IMAGE') : 'PDF',
+      fileSize: fileUrl ? 'Cloud File' : '1.2 MB',
+      fileUrl: fileUrl || undefined,
       notes
     });
     setDocuments(storage.getDocuments());
     setIsAddOpen(false);
     setTitle('');
     setNotes('');
+    setFileUrl('');
   };
 
   const handleDelete = (id: string) => {
@@ -87,56 +93,69 @@ export const DocumentVaultView: React.FC<DocumentVaultViewProps> = ({ puppy }) =
       </div>
 
       {/* Documents Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {documents.map((doc) => (
-          <div
-            key={doc.id}
-            className="p-4 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs flex flex-col justify-between hover:border-[#8B5E3C]/40 transition-colors group"
-          >
-            <div>
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8B5E3C] bg-[#FFF9F2] px-2 py-0.5 rounded-md border border-[#E8DDD3]">
-                  {doc.category}
-                </span>
-                <span className="text-xs font-semibold text-[#766A63]">
-                  {doc.fileSize} • {doc.fileType}
-                </span>
+      {documents.length === 0 ? (
+        <div className="p-12 text-center bg-white rounded-3xl border border-[#E8DDD3] shadow-xs">
+          <FileText className="w-10 h-10 text-[#8B5E3C]/60 mx-auto mb-2" />
+          <h4 className="text-sm font-bold text-[#2C211B] mb-1">No documents uploaded yet</h4>
+          <p className="text-xs text-[#766A63] max-w-sm mx-auto mb-4">
+            Upload vaccination records, adoption contracts, or insurance cards for {puppy.name}.
+          </p>
+          <Button size="sm" variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsAddOpen(true)}>
+            Upload First Document
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {documents.map((doc) => (
+            <div
+              key={doc.id}
+              className="p-4 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs flex flex-col justify-between hover:border-[#8B5E3C]/40 transition-colors group"
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8B5E3C] bg-[#FFF9F2] px-2 py-0.5 rounded-md border border-[#E8DDD3]">
+                    {doc.category}
+                  </span>
+                  <span className="text-xs font-semibold text-[#766A63]">
+                    {doc.fileSize} • {doc.fileType}
+                  </span>
+                </div>
+
+                <h3 className="text-sm font-bold text-[#2C211B] leading-snug group-hover:text-[#8B5E3C] transition-colors">
+                  {doc.title}
+                </h3>
+                {doc.notes && (
+                  <p className="text-xs text-[#766A63] mt-1 line-clamp-2">
+                    {doc.notes}
+                  </p>
+                )}
               </div>
 
-              <h3 className="text-sm font-bold text-[#2C211B] leading-snug group-hover:text-[#8B5E3C] transition-colors">
-                {doc.title}
-              </h3>
-              {doc.notes && (
-                <p className="text-xs text-[#766A63] mt-1 line-clamp-2">
-                  {doc.notes}
-                </p>
-              )}
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-[#E8DDD3]/60 flex items-center justify-between">
-              <span className="text-[11px] text-[#766A63]">Added: {doc.date}</span>
-              <div className="flex items-center gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setSelectedDoc(doc)}
-                  className="text-xs py-1 px-2.5 min-h-[32px]"
-                  leftIcon={<Eye className="w-3.5 h-3.5" />}
-                >
-                  View
-                </Button>
-                <button
-                  onClick={() => handleDelete(doc.id)}
-                  className="p-1.5 text-[#766A63] hover:text-rose-600 transition-colors rounded-lg"
-                  title="Delete document"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              <div className="mt-4 pt-3 border-t border-[#E8DDD3]/60 flex items-center justify-between">
+                <span className="text-[11px] text-[#766A63]">Added: {doc.date}</span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedDoc(doc)}
+                    className="text-xs py-1 px-2.5 min-h-[32px]"
+                    leftIcon={<Eye className="w-3.5 h-3.5" />}
+                  >
+                    View
+                  </Button>
+                  <button
+                    onClick={() => handleDelete(doc.id)}
+                    className="p-1.5 text-[#766A63] hover:text-rose-600 transition-colors rounded-lg"
+                    title="Delete document"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* View Document Preview Modal */}
       <Modal
@@ -147,24 +166,46 @@ export const DocumentVaultView: React.FC<DocumentVaultViewProps> = ({ puppy }) =
       >
         {selectedDoc && (
           <div className="space-y-4">
-            <div className="p-8 rounded-2xl bg-[#FFF9F2] border border-[#E8DDD3] text-center">
-              <FileText className="w-16 h-16 text-[#8B5E3C] mx-auto mb-3" />
-              <h4 className="text-sm font-bold text-[#2C211B]">{selectedDoc.title}</h4>
-              <p className="text-xs text-[#766A63] mt-1">
-                Authenticated PDF Document on file for {puppy.name}
-              </p>
-              {selectedDoc.notes && (
-                <p className="text-xs text-[#5F3E29] mt-3 p-2.5 bg-white rounded-xl border border-[#E8DDD3] max-w-sm mx-auto">
-                  {selectedDoc.notes}
+            {selectedDoc.fileUrl ? (
+              <div className="rounded-2xl overflow-hidden border border-[#E8DDD3] bg-[#FFF9F2] p-2 text-center">
+                <img
+                  src={selectedDoc.fileUrl}
+                  alt={selectedDoc.title}
+                  className="max-h-72 w-full object-contain rounded-xl mx-auto"
+                />
+                <a
+                  href={selectedDoc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[#8B5E3C] hover:underline"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> View Original in Cloudinary
+                </a>
+              </div>
+            ) : (
+              <div className="p-8 rounded-2xl bg-[#FFF9F2] border border-[#E8DDD3] text-center">
+                <FileText className="w-16 h-16 text-[#8B5E3C] mx-auto mb-3" />
+                <h4 className="text-sm font-bold text-[#2C211B]">{selectedDoc.title}</h4>
+                <p className="text-xs text-[#766A63] mt-1">
+                  Authenticated PDF Document on file for {puppy.name}
                 </p>
-              )}
-            </div>
+                {selectedDoc.notes && (
+                  <p className="text-xs text-[#5F3E29] mt-3 p-2.5 bg-white rounded-xl border border-[#E8DDD3] max-w-sm mx-auto">
+                    {selectedDoc.notes}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button
                 variant="primary"
                 className="w-full"
                 onClick={() => {
+                  if (selectedDoc.fileUrl) {
+                    window.open(selectedDoc.fileUrl, '_blank');
+                    return;
+                  }
                   const content = `PUPPY RECORD: ${selectedDoc.title}\nCategory: ${selectedDoc.category}\nDate: ${selectedDoc.date}\nNotes: ${selectedDoc.notes || 'None'}\nPuppy: ${puppy.name}`;
                   const blob = new Blob([content], { type: 'text/plain' });
                   const url = URL.createObjectURL(blob);
@@ -179,7 +220,7 @@ export const DocumentVaultView: React.FC<DocumentVaultViewProps> = ({ puppy }) =
                 }}
                 leftIcon={<Download className="w-4 h-4" />}
               >
-                Download Document ({selectedDoc.fileSize})
+                {selectedDoc.fileUrl ? 'Open / Download Document' : `Download Record (${selectedDoc.fileSize})`}
               </Button>
             </div>
           </div>
@@ -234,11 +275,18 @@ export const DocumentVaultView: React.FC<DocumentVaultViewProps> = ({ puppy }) =
             />
           </div>
 
-          {/* Drag and Drop Zone */}
-          <div className="p-6 rounded-2xl border-2 border-dashed border-[#E8DDD3] bg-[#FFF9F2] text-center cursor-pointer hover:border-[#8B5E3C]">
-            <Upload className="w-8 h-8 text-[#8B5E3C] mx-auto mb-2" />
-            <span className="text-xs font-bold text-[#2C211B] block">Click or drag file to attach</span>
-            <span className="text-[10px] text-[#766A63]">Supports PDF, PNG, JPEG up to 15MB</span>
+          <div>
+            <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-1">
+              Upload File / Photo to Cloudinary
+            </label>
+            <CloudinaryImageUploader
+              currentImageUrl={fileUrl}
+              onUploadSuccess={(url) => setFileUrl(url)}
+              folder="puplume/documents"
+              label="Upload Medical / Adoption Document"
+              sublabel="Upload vet certificate, vaccine record photo, or receipt directly to Cloudinary"
+              variant="card"
+            />
           </div>
 
           <div className="flex gap-2 pt-2">

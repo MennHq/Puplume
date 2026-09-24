@@ -2,15 +2,18 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 export const getAIMessages = query({
-  args: { puppyId: v.string() },
+  args: { 
+    puppyId: v.string(),
+    userId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    const userId = identity?.subject || args.userId;
+    if (!userId) return [];
 
     return await ctx.db
       .query("aiMessages")
-      .withIndex("by_puppy", (q) => q.eq("puppyId", args.puppyId))
-      .filter((q) => q.eq(q.field("userId"), identity.subject))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
   },
 });
@@ -18,6 +21,7 @@ export const getAIMessages = query({
 export const addAIMessage = mutation({
   args: {
     puppyId: v.string(),
+    userId: v.optional(v.string()),
     sender: v.string(),
     text: v.string(),
     timestamp: v.string(),
@@ -25,11 +29,14 @@ export const addAIMessage = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    const userId = identity?.subject || args.userId;
+    if (!userId) throw new Error("Authentication or userId required");
+
+    const { userId: _, ...data } = args;
 
     return await ctx.db.insert("aiMessages", {
-      ...args,
-      userId: identity.subject,
+      ...data,
+      userId,
     });
   },
 });
@@ -37,6 +44,7 @@ export const addAIMessage = mutation({
 export const saveAIMessages = mutation({
   args: {
     puppyId: v.string(),
+    userId: v.optional(v.string()),
     messages: v.array(
       v.object({
         sender: v.string(),
@@ -48,13 +56,13 @@ export const saveAIMessages = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    const userId = identity?.subject || args.userId;
+    if (!userId) throw new Error("Authentication or userId required");
 
     // Remove existing
     const existing = await ctx.db
       .query("aiMessages")
-      .withIndex("by_puppy", (q) => q.eq("puppyId", args.puppyId))
-      .filter((q) => q.eq(q.field("userId"), identity.subject))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
     for (const m of existing) {
@@ -62,14 +70,14 @@ export const saveAIMessages = mutation({
     }
 
     // Insert new
-    for (const m of args.messages) {
+    for (const msg of args.messages) {
       await ctx.db.insert("aiMessages", {
         puppyId: args.puppyId,
-        userId: identity.subject,
-        sender: m.sender,
-        text: m.text,
-        timestamp: m.timestamp,
-        suggestedActions: m.suggestedActions,
+        userId,
+        sender: msg.sender,
+        text: msg.text,
+        timestamp: msg.timestamp,
+        suggestedActions: msg.suggestedActions,
       });
     }
 

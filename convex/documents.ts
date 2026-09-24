@@ -2,15 +2,18 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 export const listDocuments = query({
-  args: { puppyId: v.string() },
+  args: { 
+    puppyId: v.string(),
+    userId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    const userId = identity?.subject || args.userId;
+    if (!userId) return [];
 
     return await ctx.db
       .query("documents")
-      .withIndex("by_puppy", (q) => q.eq("puppyId", args.puppyId))
-      .filter((q) => q.eq(q.field("userId"), identity.subject))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
   },
 });
@@ -18,48 +21,59 @@ export const listDocuments = query({
 export const addDocument = mutation({
   args: {
     puppyId: v.string(),
+    userId: v.optional(v.string()),
     title: v.string(),
     category: v.string(),
     date: v.string(),
     fileType: v.string(),
     fileSize: v.string(),
+    fileUrl: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    const userId = identity?.subject || args.userId;
+    if (!userId) throw new Error("Authentication or userId required");
+
+    const { userId: _, ...data } = args;
 
     return await ctx.db.insert("documents", {
-      ...args,
-      userId: identity.subject,
+      ...data,
+      userId,
     });
   },
 });
 
 export const deleteDocument = mutation({
-  args: { id: v.string() },
+  args: { 
+    id: v.string(),
+    userId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    const userId = identity?.subject || args.userId;
 
     const normId = ctx.db.normalizeId("documents", args.id);
     if (normId) {
       const doc = await ctx.db.get(normId);
-      if (doc && doc.userId === identity.subject) {
+      if (doc && (!userId || doc.userId === userId)) {
         await ctx.db.delete(normId);
         return normId;
       }
     }
 
-    const doc = await ctx.db
-      .query("documents")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
-      .filter((q) => q.eq(q.field("title"), args.id))
-      .first();
-    if (doc) {
-      await ctx.db.delete(doc._id);
-      return doc._id;
+    if (userId) {
+      const doc = await ctx.db
+        .query("documents")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .filter((q) => q.eq(q.field("title"), args.id))
+        .first();
+      if (doc) {
+        await ctx.db.delete(doc._id);
+        return doc._id;
+      }
     }
+
     return null;
   },
 });

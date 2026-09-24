@@ -3,14 +3,18 @@ import { v } from "convex/values";
 
 // Vaccinations
 export const listVaccinations = query({
-  args: { puppyId: v.string() },
+  args: { 
+    puppyId: v.string(),
+    userId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    const userId = identity?.subject || args.userId;
+    if (!userId) return [];
 
     return await ctx.db
       .query("vaccinations")
-      .withIndex("by_puppy", (idx) => idx.eq("puppyId", args.puppyId))
+      .withIndex("by_user", (idx) => idx.eq("userId", userId))
       .collect();
   },
 });
@@ -18,6 +22,7 @@ export const listVaccinations = query({
 export const addVaccination = mutation({
   args: {
     puppyId: v.string(),
+    userId: v.optional(v.string()),
     name: v.optional(v.string()),
     vaccineName: v.optional(v.string()),
     status: v.string(),
@@ -31,28 +36,34 @@ export const addVaccination = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Authentication required");
+    const userId = identity?.subject || args.userId;
+    if (!userId) throw new Error("Authentication or userId required");
+
+    const { userId: _, ...data } = args;
 
     return await ctx.db.insert("vaccinations", {
-      ...args,
-      name: args.name || args.vaccineName || "Vaccine",
-      vaccineName: args.vaccineName || args.name || "Vaccine",
-      userId: identity.subject,
+      ...data,
+      name: data.name || data.vaccineName || "Vaccine",
+      vaccineName: data.vaccineName || data.name || "Vaccine",
+      userId,
     });
   },
 });
 
-
 // Medications
 export const listMedications = query({
-  args: { puppyId: v.string() },
+  args: { 
+    puppyId: v.string(),
+    userId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    const userId = identity?.subject || args.userId;
+    if (!userId) return [];
 
     return await ctx.db
       .query("medications")
-      .withIndex("by_puppy", (idx) => idx.eq("puppyId", args.puppyId))
+      .withIndex("by_user", (idx) => idx.eq("userId", userId))
       .collect();
   },
 });
@@ -60,6 +71,7 @@ export const listMedications = query({
 export const addMedication = mutation({
   args: {
     puppyId: v.string(),
+    userId: v.optional(v.string()),
     name: v.string(),
     dosage: v.string(),
     frequency: v.string(),
@@ -70,25 +82,32 @@ export const addMedication = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Authentication required");
+    const userId = identity?.subject || args.userId;
+    if (!userId) throw new Error("Authentication or userId required");
+
+    const { userId: _, ...data } = args;
 
     return await ctx.db.insert("medications", {
-      ...args,
-      userId: identity.subject,
+      ...data,
+      userId,
     });
   },
 });
 
 // Vet Appointments
 export const listAppointments = query({
-  args: { puppyId: v.string() },
+  args: { 
+    puppyId: v.string(),
+    userId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    const userId = identity?.subject || args.userId;
+    if (!userId) return [];
 
     return await ctx.db
       .query("appointments")
-      .withIndex("by_puppy", (idx) => idx.eq("puppyId", args.puppyId))
+      .withIndex("by_user", (idx) => idx.eq("userId", userId))
       .collect();
   },
 });
@@ -96,6 +115,7 @@ export const listAppointments = query({
 export const addAppointment = mutation({
   args: {
     puppyId: v.string(),
+    userId: v.optional(v.string()),
     title: v.string(),
     clinic: v.string(),
     date: v.string(),
@@ -107,11 +127,14 @@ export const addAppointment = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Authentication required");
+    const userId = identity?.subject || args.userId;
+    if (!userId) throw new Error("Authentication or userId required");
+
+    const { userId: _, ...data } = args;
 
     return await ctx.db.insert("appointments", {
-      ...args,
-      userId: identity.subject,
+      ...data,
+      userId,
     });
   },
 });

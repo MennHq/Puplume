@@ -8,12 +8,14 @@ import {
   Calendar, 
   Award, 
   Sparkles, 
-  Camera 
+  Camera,
+  Cloud
 } from 'lucide-react';
 import { PuppyProfile } from '../types';
 import { storage } from '../lib/storage';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { CloudinaryImageUploader } from '../components/ui/CloudinaryImageUploader';
 
 interface PuppyProfileViewProps {
   puppy: PuppyProfile;
@@ -39,6 +41,16 @@ export const PuppyProfileView: React.FC<PuppyProfileViewProps> = ({ puppy, onUpd
   // Calculate age
   const birthDate = new Date(puppy.birthDate);
   const ageWeeks = Math.max(1, Math.floor((new Date().getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+
+  const handlePhotoUploaded = (newUrl: string) => {
+    setPhotoUrl(newUrl);
+    const updated: PuppyProfile = {
+      ...puppy,
+      photoUrl: newUrl,
+    };
+    storage.savePuppy(updated);
+    onUpdatePuppy(updated);
+  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,13 +84,15 @@ export const PuppyProfileView: React.FC<PuppyProfileViewProps> = ({ puppy, onUpd
               alt={puppy.name}
               className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover border-4 border-[#8B5E3C] shadow-md"
             />
-            <button
-              onClick={() => setIsEditOpen(true)}
-              className="absolute -bottom-2 -right-2 p-2 rounded-xl bg-[#8B5E3C] text-white shadow-xs hover:bg-[#5F3E29] transition-colors cursor-pointer"
-              title="Edit photo"
-            >
-              <Camera className="w-4 h-4" />
-            </button>
+            <div className="absolute -bottom-2 -right-2">
+              <CloudinaryImageUploader
+                currentImageUrl={puppy.photoUrl}
+                onUploadSuccess={handlePhotoUploaded}
+                folder="puplume/puppies"
+                label="Photo"
+                variant="button"
+              />
+            </div>
           </div>
 
           <div className="flex-1">
@@ -95,28 +109,33 @@ export const PuppyProfileView: React.FC<PuppyProfileViewProps> = ({ puppy, onUpd
                 </p>
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditOpen(true)}
-                leftIcon={<Edit3 className="w-4 h-4" />}
-                className="self-center sm:self-start"
-              >
-                Edit Profile
-              </Button>
+              <div className="flex items-center gap-2 self-center sm:self-start">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditOpen(true)}
+                  leftIcon={<Edit3 className="w-4 h-4" />}
+                >
+                  Edit Profile
+                </Button>
+              </div>
             </div>
 
             {/* Quick stats pills */}
             <div className="mt-4 flex flex-wrap justify-center sm:justify-start gap-2 text-xs">
               <span className="px-3 py-1 rounded-xl bg-[#FFF9F2] border border-[#E8DDD3] text-[#5F3E29] font-medium">
-                🎂 Born: {puppy.birthDate}
+                🎂 Born: {puppy.birthDate || 'Date not set'}
               </span>
-              <span className="px-3 py-1 rounded-xl bg-[#FFF9F2] border border-[#E8DDD3] text-[#5F3E29] font-medium">
-                🍖 Favorite: {puppy.favoriteTreat || 'Chicken Liver'}
-              </span>
-              <span className="px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold">
-                ✓ Full AKC Registered
-              </span>
+              {puppy.favoriteTreat ? (
+                <span className="px-3 py-1 rounded-xl bg-[#FFF9F2] border border-[#E8DDD3] text-[#5F3E29] font-medium">
+                  🍖 Favorite: {puppy.favoriteTreat}
+                </span>
+              ) : null}
+              {puppy.microchipNumber ? (
+                <span className="px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold">
+                  ✓ Microchipped
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
@@ -130,7 +149,9 @@ export const PuppyProfileView: React.FC<PuppyProfileViewProps> = ({ puppy, onUpd
             <Sparkles className="w-4 h-4" /> Temperament & Traits
           </span>
           <p className="text-xs sm:text-sm text-[#2C211B] leading-relaxed">
-            {puppy.temperament || 'Curious, playful, loves fetch, responds strongly to gentle vocal praise and liver treats.'}
+            {puppy.temperament || (
+              <span className="text-[#766A63] italic">No temperament notes added yet. Tap &quot;Edit Profile&quot; to add details.</span>
+            )}
           </p>
         </div>
 
@@ -140,7 +161,9 @@ export const PuppyProfileView: React.FC<PuppyProfileViewProps> = ({ puppy, onUpd
             <Heart className="w-4 h-4" /> Nutrition & Diet
           </span>
           <p className="text-xs sm:text-sm text-[#2C211B] leading-relaxed">
-            {puppy.dietaryRestrictions || 'Purina Pro Plan Large Breed Puppy. 3 meals daily at 0.75 cups each.'}
+            {puppy.dietaryRestrictions || (
+              <span className="text-[#766A63] italic">No food brand or feeding instructions recorded yet.</span>
+            )}
           </p>
         </div>
 
@@ -149,11 +172,19 @@ export const PuppyProfileView: React.FC<PuppyProfileViewProps> = ({ puppy, onUpd
           <span className="text-xs font-bold uppercase tracking-wider text-[#8B5E3C] flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4" /> Veterinary Clinic
           </span>
-          <h4 className="text-sm font-bold text-[#2C211B]">{puppy.vetClinic || 'City Vet Animal Hospital'}</h4>
-          <p className="text-xs text-[#5F3E29]">Dr. Eleanor Vance, DVM</p>
-          <p className="text-xs font-semibold text-[#8B5E3C] flex items-center gap-1">
-            <Phone className="w-3.5 h-3.5" /> {puppy.vetPhone || '(555) 392-8819'}
-          </p>
+          {puppy.vetClinic || puppy.vetPhone || puppy.vetName ? (
+            <>
+              <h4 className="text-sm font-bold text-[#2C211B]">{puppy.vetClinic || 'Clinic not specified'}</h4>
+              {puppy.vetName && <p className="text-xs text-[#5F3E29]">{puppy.vetName}</p>}
+              {puppy.vetPhone && (
+                <p className="text-xs font-semibold text-[#8B5E3C] flex items-center gap-1">
+                  <Phone className="w-3.5 h-3.5" /> {puppy.vetPhone}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-xs text-[#766A63] italic">No veterinary clinic added yet.</p>
+          )}
         </div>
 
         {/* Identification & Insurance */}
@@ -162,10 +193,10 @@ export const PuppyProfileView: React.FC<PuppyProfileViewProps> = ({ puppy, onUpd
             <Award className="w-4 h-4" /> Identification & Policy
           </span>
           <p className="text-xs text-[#2C211B]">
-            Microchip ID: <strong>{puppy.microchipNumber || '985141002341992'}</strong>
+            Microchip ID: <strong>{puppy.microchipNumber || 'Not recorded'}</strong>
           </p>
           <p className="text-xs text-[#2C211B]">
-            Insurance: <strong>{puppy.insuranceProvider || 'Healthy Paws Pet Insurance'}</strong>
+            Insurance: <strong>{puppy.insuranceProvider || 'Not recorded'}</strong>
           </p>
         </div>
       </div>
@@ -214,13 +245,15 @@ export const PuppyProfileView: React.FC<PuppyProfileViewProps> = ({ puppy, onUpd
 
           <div>
             <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-1">
-              Photo URL
+              Puppy Photo (Cloudinary Connected)
             </label>
-            <input
-              type="url"
-              value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl border border-[#E8DDD3] bg-[#FFF9F2] text-xs focus:outline-none focus:border-[#8B5E3C]"
+            <CloudinaryImageUploader
+              currentImageUrl={photoUrl}
+              onUploadSuccess={(url) => setPhotoUrl(url)}
+              folder="puplume/puppies"
+              label={`Upload ${name || 'Puppy'}'s Photo`}
+              sublabel="Upload real pet pictures directly to Cloudinary cloud"
+              variant="card"
             />
           </div>
 

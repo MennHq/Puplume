@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUser, SignInButton, SignUpButton } from '@clerk/react';
+import { useUser, useClerk, SignInButton, SignUpButton } from '@clerk/react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { PuppyProfile } from './types';
@@ -25,53 +25,79 @@ import { FamilySharingView } from './views/FamilySharingView';
 import { SettingsView } from './views/SettingsView';
 import { MoreMenuView } from './views/MoreMenuView';
 import { Dog, Sparkles, ShieldCheck, Heart } from 'lucide-react';
+import { clearUserDataInConvex } from './lib/convex';
 
 export default function App() {
   const { isSignedIn, isLoaded, user } = useUser();
+  const { signOut } = useClerk();
   const [puppy, setPuppy] = useState<PuppyProfile | null>(() => storage.getPuppy());
   const [currentView, setCurrentView] = useState<string>('home');
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Authoritative real-time data subscription from Convex
-  const cloudData = useQuery(api.app.getUserAppData, isSignedIn ? {} : 'skip');
-  const seedStarterData = useMutation(api.app.seedStarterData);
+  // Authoritative real-time data subscription from Convex scoped to user.id
+  const cloudData = useQuery(
+    api.app.getUserAppData,
+    isSignedIn && user?.id ? { userId: user.id } : 'skip'
+  );
+
+  const syncUserMutation = useMutation(api.users.syncUser);
 
   // Set authenticated user on storage to isolate data across users
   useEffect(() => {
     storage.setAuthenticatedUser(user?.id ?? null);
   }, [user?.id]);
 
+  // Sync user profile to Convex upon signing in
+  useEffect(() => {
+    if (isSignedIn && user?.id) {
+      syncUserMutation({
+        clerkId: user.id,
+        email: user.primaryEmailAddress?.emailAddress,
+        name: user.fullName || user.firstName || 'Pup Parent',
+        avatarUrl: user.imageUrl,
+      }).catch((err) => console.debug('[App] syncUser error:', err));
+    }
+  }, [isSignedIn, user?.id, syncUserMutation]);
+
   // Reactive listener to storage changes
   useEffect(() => {
     const unsubscribe = storage.subscribe(() => {
       const current = storage.getPuppy();
-      if (current) {
-        setPuppy({ ...current });
-      }
+      setPuppy(current ? { ...current } : null);
     });
     return unsubscribe;
   }, []);
 
-  // Hydrate from Convex reactive cloud subscription
+  // Hydrate from Convex reactive cloud subscription (No fake data!)
   useEffect(() => {
     if (cloudData && user?.id) {
-      storage.hydrateFromConvex(cloudData);
-      const activePup = storage.getPuppy();
-      if (activePup) {
-        setPuppy(activePup);
-      } else if (cloudData.puppies && cloudData.puppies.length === 0) {
-        // Automatically seed starter records into Convex for this new user account
-        seedStarterData({ force: false }).catch(() => {});
+      if (cloudData.puppies && cloudData.puppies.length > 0) {
+        storage.hydrateFromConvex(cloudData);
+        const activePup = storage.getPuppy();
+        setPuppy(activePup ? { ...activePup } : null);
+      } else {
+        const localPup = storage.getActivePuppy() || storage.getPuppy();
+        if (localPup) {
+          storage.syncFullStateToConvex(user.id);
+          setPuppy(localPup);
+        } else if (cloudData.settings?.hasCompletedOnboarding) {
+          // Existing user who already completed onboarding
+        } else {
+          // Brand-new account with zero data (only if not already set locally)
+          const current = storage.getPuppy();
+          if (!current) {
+            setPuppy(null);
+          }
+        }
       }
     }
-  }, [cloudData, user?.id, seedStarterData]);
+  }, [cloudData, user?.id]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
-
 
   // 1. Loading authentication state
   if (!isLoaded) {
@@ -134,23 +160,54 @@ export default function App() {
     );
   }
 
-  // 3. Authenticated but no puppy profile yet: Clean Onboarding Wizard
-  if (!puppy || currentView === 'onboarding') {
+  // 3. Waiting for user's cloud data to load before making routing decision
+  if (cloudData === undefined && !puppy) {
+    return (
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#8B5E3C] border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs font-semibold text-[#766A63]">Loading your puppy profile...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Active puppy from state, storage, or cloud data
+  const activePuppy: PuppyProfile | null = puppy || storage.getPuppy() || (cloudData?.puppies && cloudData.puppies.length > 0 ? {
+    id: cloudData.puppies[0]._id,
+    name: cloudData.puppies[0].name,
+    breed: cloudData.puppies[0].breed,
+    birthDate: cloudData.puppies[0].birthDate,
+    sex: cloudData.puppies[0].sex as 'male' | 'female',
+    weightLbs: cloudData.puppies[0].weightLbs,
+    photoUrl: cloudData.puppies[0].photoUrl,
+    temperament: cloudData.puppies[0].temperament,
+    dietaryRestrictions: cloudData.puppies[0].dietaryRestrictions,
+    favoriteTreat: cloudData.puppies[0].favoriteTreat,
+    createdAt: cloudData.puppies[0].createdAt,
+  } : null);
+
+  // 4. Show onboarding only if user explicitly navigated to it, OR if user has no puppy profile yet
+  if (!activePuppy || currentView === 'onboarding') {
     return (
       <OnboardingWizard
+        userId={user?.id}
         onComplete={(newPuppy) => {
           setPuppy(newPuppy);
           setCurrentView('home');
           showToast(`Welcome ${newPuppy.name}! Your puppy's schedule is ready.`);
+          if (user?.id) {
+            storage.syncFullStateToConvex(user.id);
+          }
         }}
         onCancel={() => {
-          if (puppy) setCurrentView('home');
+          if (activePuppy) setCurrentView('home');
         }}
       />
     );
   }
 
-  // 4. Authenticated with puppy profile: Full Application
+  // 5. Authenticated with puppy profile: Full Application
   return (
     <AppLayout
       currentView={currentView}
@@ -158,13 +215,38 @@ export default function App() {
         setCurrentView(view);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }}
-      puppy={puppy}
+      puppy={activePuppy}
       onSelectLesson={(lessonId) => {
         setSelectedLessonId(lessonId);
         setCurrentView('academy');
       }}
       onOpenNewPuppyWizard={() => setCurrentView('onboarding')}
     >
+      {/* Demo Profile Alert Banner if user still has placeholder Max */}
+      {activePuppy.name === 'Max' && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-amber-900">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>Demo profile active:</strong> Set up your real puppy&apos;s schedule with our conversational AI Onboarding!
+            </span>
+          </div>
+          <button
+            onClick={async () => {
+              if (user?.id) {
+                await clearUserDataInConvex(user.id);
+              }
+              storage.clearAllUserData();
+              setPuppy(null);
+              setCurrentView('onboarding');
+            }}
+            className="px-3 py-1 bg-[#8B5E3C] hover:bg-[#6D492F] text-white font-bold rounded-lg transition-colors cursor-pointer shrink-0 text-xs shadow-xs"
+          >
+            Start Real AI Onboarding
+          </button>
+        </div>
+      )}
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-4 right-4 z-50 bg-[#2C211B] text-white text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-xl border border-[#E8DDD3]/30">
@@ -175,7 +257,7 @@ export default function App() {
       {/* Main View Router */}
       {currentView === 'home' && (
         <HomeScreen
-          puppy={puppy}
+          puppy={activePuppy}
           onNavigate={setCurrentView}
           onOpenSearch={() => {
             const searchBtn = document.getElementById('home-search-button');
@@ -194,7 +276,7 @@ export default function App() {
 
       {currentView === 'tasks' && (
         <TasksView
-          puppy={puppy}
+          puppy={activePuppy}
           onOpenLesson={(lessonId) => {
             setSelectedLessonId(lessonId);
             setCurrentView('academy');
@@ -204,14 +286,14 @@ export default function App() {
 
       {currentView === 'ai' && (
         <AIAssistantView
-          puppy={puppy}
+          puppy={activePuppy}
           onActionTriggered={(msg) => showToast(msg)}
         />
       )}
 
       {currentView === 'academy' && (
         <TrainingAcademyView
-          puppy={puppy}
+          puppy={activePuppy}
           activeLessonId={selectedLessonId}
           onCloseLessonModal={() => setSelectedLessonId(null)}
         />
@@ -219,42 +301,43 @@ export default function App() {
 
       {currentView === 'more' && (
         <MoreMenuView
-          puppy={puppy}
+          puppy={activePuppy}
           onNavigate={setCurrentView}
-          onSignOut={() => {
-            storage.clearAll();
+          onSignOut={async () => {
+            storage.clearActiveSession();
             setPuppy(null);
+            await signOut();
           }}
         />
       )}
 
       {currentView === 'potty' && (
-        <PottyTrackerView puppy={puppy} />
+        <PottyTrackerView puppy={activePuppy} />
       )}
 
       {currentView === 'health' && (
-        <HealthCenterView puppy={puppy} />
+        <HealthCenterView puppy={activePuppy} />
       )}
 
       {currentView === 'expenses' && (
-        <ExpensesView puppy={puppy} />
+        <ExpensesView puppy={activePuppy} />
       )}
 
       {currentView === 'vault' && (
-        <DocumentVaultView puppy={puppy} />
+        <DocumentVaultView puppy={activePuppy} />
       )}
 
       {currentView === 'socialization' && (
-        <SocializationGroomingView puppy={puppy} />
+        <SocializationGroomingView puppy={activePuppy} />
       )}
 
       {currentView === 'journal' && (
-        <PuppyJournalView puppy={puppy} />
+        <PuppyJournalView puppy={activePuppy} />
       )}
 
       {currentView === 'puppy' && (
         <PuppyProfileView
-          puppy={puppy}
+          puppy={activePuppy}
           onUpdatePuppy={(updated) => {
             setPuppy(updated);
             showToast(`${updated.name}'s profile updated!`);
@@ -263,16 +346,20 @@ export default function App() {
       )}
 
       {currentView === 'sharing' && (
-        <FamilySharingView puppy={puppy} />
+        <FamilySharingView puppy={activePuppy} />
       )}
 
       {currentView === 'settings' && (
         <SettingsView
-          puppy={puppy}
-          onResetData={() => {
-            storage.clearAll();
+          puppy={activePuppy}
+          onResetData={async () => {
+            if (user?.id) {
+              await clearUserDataInConvex(user.id);
+            }
+            storage.clearAllUserData();
             setPuppy(null);
-            showToast('All data cleared.');
+            setCurrentView('onboarding');
+            showToast('All data cleared. Welcome to AI Onboarding!');
           }}
         />
       )}

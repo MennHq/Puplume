@@ -54,7 +54,7 @@ export const HealthCenterView: React.FC<HealthCenterViewProps> = ({ puppy }) => 
   const [vacName, setVacName] = useState('');
   const [vacAdminDate, setVacAdminDate] = useState('');
   const [vacDueDate, setVacDueDate] = useState('');
-  const [vacClinic, setVacClinic] = useState(puppy.vetClinic || 'City Vet Animal Hospital');
+  const [vacClinic, setVacClinic] = useState(puppy.vetClinic || '');
 
   // Med Form
   const [medName, setMedName] = useState('');
@@ -64,7 +64,7 @@ export const HealthCenterView: React.FC<HealthCenterViewProps> = ({ puppy }) => 
   // Apt Form
   const [aptTitle, setAptTitle] = useState('');
   const [aptDate, setAptDate] = useState('');
-  const [aptTime, setAptTime] = useState('03:00 PM');
+  const [aptTime, setAptTime] = useState('09:00 AM');
   const [aptReason, setAptReason] = useState('');
 
   // Weight Form
@@ -77,13 +77,15 @@ export const HealthCenterView: React.FC<HealthCenterViewProps> = ({ puppy }) => 
       puppyId: puppy.id,
       vaccineName: vacName,
       administeredDate: vacAdminDate || new Date().toISOString().split('T')[0],
-      nextDueDate: vacDueDate || '2026-10-12',
-      vetClinic: vacClinic,
+      nextDueDate: vacDueDate || '',
+      vetClinic: vacClinic || puppy.vetClinic || '',
       status: 'up_to_date'
     });
     setVaccinations(storage.getVaccinations());
     setIsAddVacOpen(false);
     setVacName('');
+    setVacDueDate('');
+    setVacAdminDate('');
   };
 
   const handleAddMedication = (e: React.FormEvent) => {
@@ -108,8 +110,8 @@ export const HealthCenterView: React.FC<HealthCenterViewProps> = ({ puppy }) => 
     storage.addAppointment({
       puppyId: puppy.id,
       title: aptTitle,
-      clinic: puppy.vetClinic || 'City Vet Animal Hospital',
-      date: aptDate || '2026-10-12',
+      clinic: puppy.vetClinic || 'Vet Clinic',
+      date: aptDate || new Date().toISOString().split('T')[0],
       time: aptTime,
       reason: aptReason,
       status: 'scheduled'
@@ -179,11 +181,13 @@ export const HealthCenterView: React.FC<HealthCenterViewProps> = ({ puppy }) => 
               Primary Veterinarian
             </span>
             <h3 className="text-sm font-bold text-[#2C211B] mt-0.5">
-              {puppy.vetName || 'Dr. Eleanor Vance, DVM'}
+              {puppy.vetClinic || puppy.vetName ? (puppy.vetName || puppy.vetClinic) : 'No clinic added'}
             </h3>
-            <p className="text-xs text-[#5F3E29]">{puppy.vetClinic || 'City Vet Animal Hospital'}</p>
+            {puppy.vetName && puppy.vetClinic && (
+              <p className="text-xs text-[#5F3E29]">{puppy.vetClinic}</p>
+            )}
             <p className="text-xs font-semibold text-[#8B5E3C] mt-1 flex items-center gap-1">
-              <Phone className="w-3 h-3" /> {puppy.vetPhone || '(555) 392-8819'}
+              <Phone className="w-3 h-3" /> {puppy.vetPhone || 'No phone recorded'}
             </p>
           </div>
           <div className="p-2.5 rounded-xl bg-white border border-[#E8DDD3] text-[#8B5E3C]">
@@ -197,11 +201,13 @@ export const HealthCenterView: React.FC<HealthCenterViewProps> = ({ puppy }) => 
               Pet Insurance & Microchip
             </span>
             <h3 className="text-sm font-bold text-[#2C211B] mt-0.5">
-              {puppy.insuranceProvider || 'Healthy Paws Pet Insurance'}
+              {puppy.insuranceProvider || 'No insurance recorded'}
             </h3>
-            <p className="text-xs text-[#766A63]">Policy: #{puppy.insurancePolicyNumber || 'HP-99201-GLD'}</p>
+            {puppy.insurancePolicyNumber && (
+              <p className="text-xs text-[#766A63]">Policy: #{puppy.insurancePolicyNumber}</p>
+            )}
             <p className="text-xs font-semibold text-[#5F3E29] mt-1">
-              Microchip: {puppy.microchipNumber || '985141002341992'}
+              Microchip: {puppy.microchipNumber || 'Not recorded'}
             </p>
           </div>
           <div className="p-2.5 rounded-xl bg-white border border-[#E8DDD3] text-[#8B5E3C]">
@@ -250,35 +256,48 @@ export const HealthCenterView: React.FC<HealthCenterViewProps> = ({ puppy }) => 
             </Button>
           </div>
 
-          <div className="space-y-3">
-            {vaccinations.map((vac) => (
-              <div
-                key={vac.id}
-                className="p-4 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-[#2C211B]">{vac.vaccineName}</h3>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      vac.status === 'up_to_date' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {vac.status === 'up_to_date' ? 'Up to Date' : 'Due Soon'}
-                    </span>
+          {vaccinations.length === 0 ? (
+            <div className="p-10 text-center bg-white rounded-3xl border border-[#E8DDD3] shadow-xs">
+              <ShieldCheck className="w-10 h-10 text-[#8B5E3C]/60 mx-auto mb-2" />
+              <h4 className="text-sm font-bold text-[#2C211B] mb-1">No vaccinations logged yet</h4>
+              <p className="text-xs text-[#766A63] mb-4">Record core and non-core vaccines to track booster due dates.</p>
+              <Button size="sm" variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsAddVacOpen(true)}>
+                Add Vaccine Record
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {vaccinations.map((vac) => (
+                <div
+                  key={vac.id}
+                  className="p-4 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-[#2C211B]">{vac.vaccineName}</h3>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        vac.status === 'up_to_date' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {vac.status === 'up_to_date' ? 'Up to Date' : 'Due Soon'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#766A63] mt-1">
+                      Administered: {vac.administeredDate} • Next Due: <strong>{vac.nextDueDate || 'Not set'}</strong>
+                    </p>
+                    {vac.lotNumber && (
+                      <p className="text-[11px] text-[#766A63]">Clinic Lot: {vac.lotNumber}</p>
+                    )}
                   </div>
-                  <p className="text-xs text-[#766A63] mt-1">
-                    Administered: {vac.administeredDate} • Next Due: <strong>{vac.nextDueDate}</strong>
-                  </p>
-                  {vac.lotNumber && (
-                    <p className="text-[11px] text-[#766A63]">Clinic Lot: {vac.lotNumber}</p>
+
+                  {vac.vetClinic && (
+                    <div className="text-xs font-semibold text-[#5F3E29] bg-[#FFF9F2] px-3 py-1.5 rounded-xl border border-[#E8DDD3] self-start sm:self-auto">
+                      {vac.vetClinic}
+                    </div>
                   )}
                 </div>
-
-                <div className="text-xs font-semibold text-[#5F3E29] bg-[#FFF9F2] px-3 py-1.5 rounded-xl border border-[#E8DDD3] self-start sm:self-auto">
-                  {vac.vetClinic}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -299,33 +318,44 @@ export const HealthCenterView: React.FC<HealthCenterViewProps> = ({ puppy }) => 
             </Button>
           </div>
 
-          <div className="space-y-3">
-            {medications.map((med) => (
-              <div
-                key={med.id}
-                className="p-4 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs flex items-center justify-between gap-3"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="p-2.5 rounded-xl bg-purple-50 text-purple-700 mt-0.5">
-                    <Pill className="w-5 h-5" />
+          {medications.length === 0 ? (
+            <div className="p-10 text-center bg-white rounded-3xl border border-[#E8DDD3] shadow-xs">
+              <Pill className="w-10 h-10 text-[#8B5E3C]/60 mx-auto mb-2" />
+              <h4 className="text-sm font-bold text-[#2C211B] mb-1">No medications recorded</h4>
+              <p className="text-xs text-[#766A63] mb-4">Log flea, tick, heartworm preventatives, or prescription meds.</p>
+              <Button size="sm" variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsAddMedOpen(true)}>
+                Add Medication
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {medications.map((med) => (
+                <div
+                  key={med.id}
+                  className="p-4 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2.5 rounded-xl bg-purple-50 text-purple-700 mt-0.5">
+                      <Pill className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[#2C211B]">{med.name}</h3>
+                      <p className="text-xs text-[#766A63] mt-0.5">
+                        Dosage: <strong>{med.dosage}</strong> • {med.frequency}
+                      </p>
+                      {med.notes && (
+                        <p className="text-[11px] text-[#5F3E29] mt-1">{med.notes}</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-[#2C211B]">{med.name}</h3>
-                    <p className="text-xs text-[#766A63] mt-0.5">
-                      Dosage: <strong>{med.dosage}</strong> • {med.frequency}
-                    </p>
-                    {med.notes && (
-                      <p className="text-[11px] text-[#5F3E29] mt-1">{med.notes}</p>
-                    )}
-                  </div>
-                </div>
 
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                  Active
-                </span>
-              </div>
-            ))}
-          </div>
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    Active
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -346,36 +376,47 @@ export const HealthCenterView: React.FC<HealthCenterViewProps> = ({ puppy }) => 
             </Button>
           </div>
 
-          <div className="space-y-3">
-            {appointments.map((apt) => (
-              <div
-                key={apt.id}
-                className="p-4 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-[#2C211B]">{apt.title}</h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
-                      {apt.status}
-                    </span>
+          {appointments.length === 0 ? (
+            <div className="p-10 text-center bg-white rounded-3xl border border-[#E8DDD3] shadow-xs">
+              <CalendarIcon className="w-10 h-10 text-[#8B5E3C]/60 mx-auto mb-2" />
+              <h4 className="text-sm font-bold text-[#2C211B] mb-1">No vet visits scheduled</h4>
+              <p className="text-xs text-[#766A63] mb-4">Schedule wellness checkups, booster visits, or consultations.</p>
+              <Button size="sm" variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsAddAptOpen(true)}>
+                Schedule Visit
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {appointments.map((apt) => (
+                <div
+                  key={apt.id}
+                  className="p-4 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-[#2C211B]">{apt.title}</h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
+                        {apt.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#766A63] mt-1">
+                      📅 {apt.date} at {apt.time} • {apt.clinic}
+                    </p>
+                    <p className="text-xs text-[#5F3E29] mt-1 leading-relaxed">
+                      Reason: {apt.reason}
+                    </p>
+                    {apt.notes && (
+                      <p className="text-[11px] text-[#766A63] mt-0.5">Note: {apt.notes}</p>
+                    )}
                   </div>
-                  <p className="text-xs text-[#766A63] mt-1">
-                    📅 {apt.date} at {apt.time} • {apt.clinic}
-                  </p>
-                  <p className="text-xs text-[#5F3E29] mt-1 leading-relaxed">
-                    Reason: {apt.reason}
-                  </p>
-                  {apt.notes && (
-                    <p className="text-[11px] text-[#766A63] mt-0.5">Note: {apt.notes}</p>
-                  )}
-                </div>
 
-                <div className="text-xs font-bold text-[#8B5E3C] bg-[#FFF9F2] px-3 py-1.5 rounded-xl border border-[#E8DDD3] self-start sm:self-auto">
-                  {apt.doctor || 'Staff Vet'}
+                  <div className="text-xs font-bold text-[#8B5E3C] bg-[#FFF9F2] px-3 py-1.5 rounded-xl border border-[#E8DDD3] self-start sm:self-auto">
+                    {apt.doctor || 'Staff Vet'}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -399,25 +440,23 @@ export const HealthCenterView: React.FC<HealthCenterViewProps> = ({ puppy }) => 
           <div className="p-6 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs text-center">
             <span className="text-xs font-bold text-[#766A63] uppercase tracking-wider">Current Weight</span>
             <div className="text-4xl font-black text-[#2C211B] my-2">
-              {puppy.weightLbs} <span className="text-xl font-medium text-[#766A63]">lbs</span>
+              {puppy.weightLbs > 0 ? puppy.weightLbs : '—'} <span className="text-xl font-medium text-[#766A63]">lbs</span>
             </div>
             <p className="text-xs text-[#8B5E3C] font-semibold">
-              Steady healthy gain (+2.4 lbs over past 3 weeks) on large-breed puppy track.
+              {puppy.weightLbs > 0
+                ? `Logged at approximately ${Math.max(1, Math.floor((Date.now() - new Date(puppy.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 7)))} weeks of age for ${puppy.breed}.`
+                : `No weight recorded yet for ${puppy.name}. Log their current weight to track healthy growth.`}
             </p>
 
-            <div className="mt-6 pt-6 border-t border-[#E8DDD3] grid grid-cols-3 gap-2 text-left">
-              <div className="p-3 rounded-xl bg-[#FFF9F2] border border-[#E8DDD3]">
-                <span className="text-[10px] text-[#766A63]">8 Weeks</span>
-                <p className="text-sm font-bold text-[#2C211B]">16.5 lbs</p>
-              </div>
-              <div className="p-3 rounded-xl bg-[#FFF9F2] border border-[#E8DDD3]">
-                <span className="text-[10px] text-[#766A63]">11 Weeks</span>
-                <p className="text-sm font-bold text-[#2C211B]">21.8 lbs</p>
-              </div>
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
-                <span className="text-[10px] text-emerald-800 font-bold">14 Weeks (Today)</span>
-                <p className="text-sm font-black text-emerald-900">{puppy.weightLbs} lbs</p>
-              </div>
+            <div className="mt-6 pt-6 border-t border-[#E8DDD3] flex justify-center">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsAddWeightOpen(true)}
+                leftIcon={<Plus className="w-4 h-4" />}
+              >
+                Update Weight Record
+              </Button>
             </div>
           </div>
         </div>

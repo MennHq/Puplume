@@ -18,9 +18,8 @@ export const INITIAL_TRAINING_CURRICULUM: TrainingLesson[] = [
     durationMin: 5,
     tips: ['Never say the name 5 times in a row without a reward or it becomes background noise.', 'Use pea-sized soft treats like boiled chicken.'],
     commonMistakes: ['Using their name angrily when they do something wrong.', 'Repeating "Max! Max! Max!" before they look.'],
-    completed: true,
-    mastered: true,
-    lastPracticed: '2026-09-20'
+    completed: false,
+    mastered: false
   },
   {
     id: 'found-2',
@@ -38,9 +37,8 @@ export const INITIAL_TRAINING_CURRICULUM: TrainingLesson[] = [
     durationMin: 5,
     tips: ['Keep marker crisp and identical in tone.', 'Always follow the marker with a reward, even if you marked by accident.'],
     commonMistakes: ['Moving your treat hand before saying the marker word.', 'Saying "Good boyyyy" instead of a crisp marker.'],
-    completed: true,
-    mastered: true,
-    lastPracticed: '2026-09-20'
+    completed: false,
+    mastered: false
   },
   {
     id: 'found-3',
@@ -58,9 +56,8 @@ export const INITIAL_TRAINING_CURRICULUM: TrainingLesson[] = [
     durationMin: 5,
     tips: ['Don’t lift the treat too high or they will jump up instead of sitting.'],
     commonMistakes: ['Pushing down on puppy’s hips (can cause physical resistance).', 'Saying "Sit sit sit" repeatedly.'],
-    completed: true,
-    mastered: false,
-    lastPracticed: '2026-09-21'
+    completed: false,
+    mastered: false
   },
   {
     id: 'found-4',

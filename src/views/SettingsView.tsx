@@ -8,11 +8,15 @@ import {
   Smartphone, 
   Check, 
   Trash2, 
-  ExternalLink 
+  ExternalLink,
+  Cloud,
+  CheckCircle2,
+  Image as ImageIcon 
 } from 'lucide-react';
 import { PuppyProfile } from '../types';
 import { storage } from '../lib/storage';
 import { Button } from '../components/ui/Button';
+import { CloudinaryImageUploader } from '../components/ui/CloudinaryImageUploader';
 
 interface SettingsViewProps {
   puppy: PuppyProfile;
@@ -176,6 +180,40 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ puppy, onResetData }
           >
             Metric (kg, grams)
           </button>
+        </div>
+      </div>
+
+      {/* Cloudinary Media Cloud Connection */}
+      <div className="p-6 rounded-3xl bg-white border border-[#E8DDD3] shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-[#2C211B] flex items-center gap-2">
+            <Cloud className="w-4 h-4 text-sky-600" />
+            Cloudinary Media Storage
+          </h3>
+          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" /> Connected (iy8oa0qj)
+          </span>
+        </div>
+        <p className="text-xs text-[#766A63]">
+          Pet photos, journal memory snapshots, and medical documents are saved directly to Cloudinary and synchronized with your Convex cloud database. When you log in from any device, all your pet&apos;s photos and records load automatically.
+        </p>
+
+        <div>
+          <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-2">
+            Update {puppy.name}&apos;s Primary Photo
+          </label>
+          <CloudinaryImageUploader
+            currentImageUrl={puppy.photoUrl}
+            onUploadSuccess={(url) => {
+              const updated = { ...puppy, photoUrl: url };
+              storage.savePuppy(updated);
+              showStatus(`${puppy.name}'s photo updated & synced to Cloudinary!`);
+            }}
+            folder="puplume/puppies"
+            label={`Upload New Photo for ${puppy.name}`}
+            sublabel="Upload new pet picture • Automatically synced to database"
+            variant="card"
+          />
         </div>
       </div>
 

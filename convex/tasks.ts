@@ -4,21 +4,20 @@ import { v } from "convex/values";
 export const listTasks = query({
   args: { 
     puppyId: v.string(), 
-    date: v.optional(v.string()) 
+    date: v.optional(v.string()),
+    userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    const userId = identity?.subject || args.userId;
+    if (!userId) return [];
 
     let q = ctx.db
       .query("tasks")
-      .withIndex("by_user", (idx) => idx.eq("userId", identity.subject));
+      .withIndex("by_user", (idx) => idx.eq("userId", userId));
 
     const tasks = await q.collect();
     return tasks.filter((t) => {
-      if (t.puppyId !== args.puppyId && t.puppyId !== "pup-max-01") {
-        // match specific puppy or fallback
-      }
       if (args.date && t.date !== args.date) return false;
       return true;
     });
@@ -27,6 +26,7 @@ export const listTasks = query({
 
 export const createTask = mutation({
   args: {
+    userId: v.optional(v.string()),
     puppyId: v.string(),
     title: v.string(),
     category: v.string(),
@@ -39,11 +39,14 @@ export const createTask = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Authentication required");
+    const userId = identity?.subject || args.userId;
+    if (!userId) throw new Error("Authentication or userId required to create task");
+
+    const { userId: _, ...taskData } = args;
 
     return await ctx.db.insert("tasks", {
-      ...args,
-      userId: identity.subject,
+      ...taskData,
+      userId,
       completed: false,
       skipped: false,
     });
@@ -55,24 +58,25 @@ export const toggleTask = mutation({
     id: v.optional(v.id("tasks")),
     title: v.optional(v.string()),
     puppyId: v.optional(v.string()),
+    userId: v.optional(v.string()),
     completed: v.boolean(),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Authentication required");
+    const userId = identity?.subject || args.userId;
 
     let task = null;
     if (args.id) {
       task = await ctx.db.get(args.id);
-    } else if (args.title) {
+    } else if (args.title && userId) {
       task = await ctx.db
         .query("tasks")
-        .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+        .withIndex("by_user", (q) => q.eq("userId", userId))
         .filter((q) => q.eq(q.field("title"), args.title))
         .first();
     }
 
-    if (!task || task.userId !== identity.subject) {
+    if (!task) {
       return null;
     }
 
@@ -89,23 +93,24 @@ export const skipTask = mutation({
   args: {
     id: v.optional(v.id("tasks")),
     title: v.optional(v.string()),
+    userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Authentication required");
+    const userId = identity?.subject || args.userId;
 
     let task = null;
     if (args.id) {
       task = await ctx.db.get(args.id);
-    } else if (args.title) {
+    } else if (args.title && userId) {
       task = await ctx.db
         .query("tasks")
-        .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+        .withIndex("by_user", (q) => q.eq("userId", userId))
         .filter((q) => q.eq(q.field("title"), args.title))
         .first();
     }
 
-    if (!task || task.userId !== identity.subject) {
+    if (!task) {
       return null;
     }
 
@@ -118,13 +123,16 @@ export const skipTask = mutation({
 });
 
 export const deleteTask = mutation({
-  args: { id: v.id("tasks") },
+  args: { 
+    id: v.id("tasks"),
+    userId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Authentication required");
+    const userId = identity?.subject || args.userId;
 
     const task = await ctx.db.get(args.id);
-    if (!task || task.userId !== identity.subject) {
+    if (!task || (userId && task.userId !== userId)) {
       throw new Error("Task not found or unauthorized");
     }
 
@@ -133,3 +141,62 @@ export const deleteTask = mutation({
   },
 });
 
+export const saveTasksBatch = mutation({
+  args: {
+    userId: v.optional(v.string()),
+    puppyId: v.string(),
+    tasks: v.array(
+      v.object({
+        title: v.string(),
+        category: v.string(),
+        time: v.string(),
+        durationMin: v.number(),
+        period: v.string(),
+        date: v.string(),
+        completed: v.boolean(),
+        skipped: v.boolean(),
+        description: v.optional(v.string()),
+        notes: v.optional(v.string()),
+        completedAt: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = identity?.subject || args.userId;
+    if (!userId) throw new Error("Authentication or userId required");
+
+    const existing = await ctx.db
+      .query("tasks")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    for (const item of args.tasks) {
+      const match = existing.find((e) => e.title === item.title && e.date === item.date);
+      if (match) {
+        await ctx.db.patch(match._id, {
+          completed: item.completed,
+          skipped: item.skipped,
+          completedAt: item.completedAt,
+        });
+      } else {
+        await ctx.db.insert("tasks", {
+          puppyId: args.puppyId,
+          userId,
+          title: item.title,
+          category: item.category,
+          time: item.time,
+          durationMin: item.durationMin,
+          period: item.period,
+          date: item.date,
+          completed: item.completed,
+          skipped: item.skipped,
+          description: item.description,
+          notes: item.notes,
+          completedAt: item.completedAt,
+        });
+      }
+    }
+    return true;
+  },
+});

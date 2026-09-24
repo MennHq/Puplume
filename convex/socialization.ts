@@ -2,15 +2,18 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 export const listSocialization = query({
-  args: { puppyId: v.string() },
+  args: { 
+    puppyId: v.string(),
+    userId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    const userId = identity?.subject || args.userId;
+    if (!userId) return [];
 
     return await ctx.db
       .query("socialization")
-      .withIndex("by_puppy", (q) => q.eq("puppyId", args.puppyId))
-      .filter((q) => q.eq(q.field("userId"), identity.subject))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
   },
 });
@@ -18,6 +21,7 @@ export const listSocialization = query({
 export const updateSocializationStatus = mutation({
   args: {
     puppyId: v.string(),
+    userId: v.optional(v.string()),
     category: v.string(),
     title: v.string(),
     description: v.string(),
@@ -27,14 +31,15 @@ export const updateSocializationStatus = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    const userId = identity?.subject || args.userId;
+    if (!userId) throw new Error("Authentication or userId required");
 
     const existing = await ctx.db
       .query("socialization")
-      .withIndex("by_puppy", (q) => q.eq("puppyId", args.puppyId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter(
         (q) =>
-          q.eq(q.field("userId"), identity.subject) &&
+          q.eq(q.field("puppyId"), args.puppyId) &&
           q.eq(q.field("title"), args.title)
       )
       .first();
@@ -48,9 +53,11 @@ export const updateSocializationStatus = mutation({
       return existing._id;
     }
 
+    const { userId: _, ...data } = args;
+
     return await ctx.db.insert("socialization", {
-      ...args,
-      userId: identity.subject,
+      ...data,
+      userId,
     });
   },
 });

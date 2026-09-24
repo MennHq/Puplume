@@ -2,14 +2,15 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 export const listFamilyMembers = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { userId: v.optional(v.string()) },
+  handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    const userId = identity?.subject || args.userId;
+    if (!userId) return [];
 
     return await ctx.db
       .query("familyMembers")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
   },
 });
@@ -17,6 +18,7 @@ export const listFamilyMembers = query({
 export const addFamilyMember = mutation({
   args: {
     puppyId: v.optional(v.string()),
+    userId: v.optional(v.string()),
     name: v.string(),
     email: v.string(),
     role: v.string(),
@@ -25,39 +27,48 @@ export const addFamilyMember = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    const userId = identity?.subject || args.userId;
+    if (!userId) throw new Error("Authentication or userId required");
+
+    const { userId: _, ...data } = args;
 
     return await ctx.db.insert("familyMembers", {
-      ...args,
-      userId: identity.subject,
+      ...data,
+      userId,
     });
   },
 });
 
 export const deleteFamilyMember = mutation({
-  args: { id: v.string() },
+  args: { 
+    id: v.string(),
+    userId: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    const userId = identity?.subject || args.userId;
 
     const normId = ctx.db.normalizeId("familyMembers", args.id);
     if (normId) {
       const member = await ctx.db.get(normId);
-      if (member && member.userId === identity.subject) {
+      if (member && (!userId || member.userId === userId)) {
         await ctx.db.delete(normId);
         return normId;
       }
     }
 
-    const member = await ctx.db
-      .query("familyMembers")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
-      .filter((q) => q.eq(q.field("email"), args.id))
-      .first();
-    if (member) {
-      await ctx.db.delete(member._id);
-      return member._id;
+    if (userId) {
+      const member = await ctx.db
+        .query("familyMembers")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .filter((q) => q.eq(q.field("email"), args.id))
+        .first();
+      if (member) {
+        await ctx.db.delete(member._id);
+        return member._id;
+      }
     }
+
     return null;
   },
 });

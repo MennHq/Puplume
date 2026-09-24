@@ -26,20 +26,20 @@ interface AIAssistantViewProps {
   onActionTriggered?: (msg: string) => void;
 }
 
-const STARTER_PROMPTS = [
-  'Why is Max biting so much?',
-  'What should Max do today?',
-  'When is Max’s next vaccine?',
-  'Create a potty-training plan.',
-  'Why won’t Max settle in the crate?',
-  'Summarize Max’s progress this week.'
-];
-
 export const AIAssistantView: React.FC<AIAssistantViewProps> = ({ puppy, onActionTriggered }) => {
   const [messages, setMessages] = useState<AIMessage[]>(storage.getAIMessages());
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [executedActions, setExecutedActions] = useState<Record<string, boolean>>({});
+
+  const starterPrompts = [
+    `Why is ${puppy.name} biting so much?`,
+    `What should ${puppy.name} do today?`,
+    `When is ${puppy.name}’s next vaccine?`,
+    'Create a potty-training plan.',
+    `Why won’t ${puppy.name} settle in the crate?`,
+    `Summarize ${puppy.name}’s progress this week.`
+  ];
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -348,7 +348,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({ puppy, onActio
 
       {/* Starter Prompts Pills */}
       <div className="py-2 overflow-x-auto no-scrollbar flex items-center gap-1.5 flex-nowrap">
-        {STARTER_PROMPTS.map((prompt) => (
+        {starterPrompts.map((prompt) => (
           <button
             key={prompt}
             onClick={() => handleSend(prompt)}
@@ -371,7 +371,7 @@ export const AIAssistantView: React.FC<AIAssistantViewProps> = ({ puppy, onActio
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={`Ask anything about ${puppy.name}... (e.g. "Create potty plan", "Why is Max biting?")`}
+          placeholder={`Ask anything about ${puppy.name}... (e.g. "Create potty plan", "Why is ${puppy.name} biting?")`}
           className="w-full pl-4 pr-12 py-3 rounded-2xl border border-[#E8DDD3] bg-white text-sm text-[#2C211B] shadow-xs focus:outline-none focus:border-[#8B5E3C]"
         />
         <button

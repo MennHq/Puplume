@@ -57,546 +57,8 @@ export interface UserSettingsData {
   medAlerts: boolean;
   units: 'imperial' | 'metric';
   activePuppyId?: string;
+  hasCompletedOnboarding?: boolean;
 }
-
-// Seed puppy: Max, 14-week old Golden Retriever
-export const SEED_PUPPY: PuppyProfile = {
-  id: 'pup-max-01',
-  name: 'Max',
-  photoUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=800&q=80',
-  breed: 'Golden Retriever',
-  birthDate: '2026-06-15',
-  sex: 'male',
-  weightLbs: 24.2,
-  microchipNumber: '985141002341992',
-  allergies: 'None known',
-  dietaryRestrictions: 'Large breed puppy kibble with warm bone broth',
-  temperament: 'Gentle, curious, food-motivated, evening zoomies enthusiast',
-  adoptionDate: '2026-08-10',
-  vetName: 'Dr. Eleanor Vance, DVM',
-  vetPhone: '(555) 392-8819',
-  vetClinic: 'City Vet Animal Hospital',
-  insuranceProvider: 'Healthy Paws Pet Insurance',
-  insurancePolicyNumber: 'HP-99201-GLD',
-  favoriteTreat: 'Dehydrated beef liver & blueberries',
-  createdAt: '2026-08-10T10:00:00.000Z'
-};
-
-export const SEED_TASKS: TaskItem[] = [
-  {
-    id: 'task-1',
-    puppyId: 'pup-max-01',
-    title: 'Breakfast & Fresh Water',
-    category: 'feeding',
-    time: '07:00 AM',
-    durationMin: 15,
-    completed: true,
-    skipped: false,
-    period: 'morning',
-    date: new Date().toISOString().split('T')[0],
-    description: '1 cup puppy kibble + 2 tbsp warm bone broth',
-    completedAt: '07:08 AM'
-  },
-  {
-    id: 'task-2',
-    puppyId: 'pup-max-01',
-    title: 'Post-Breakfast Potty Break',
-    category: 'potty',
-    time: '07:15 AM',
-    durationMin: 10,
-    completed: true,
-    skipped: false,
-    period: 'morning',
-    date: new Date().toISOString().split('T')[0],
-    description: 'Target grass patch, repeat "Go Potty" cue once',
-    completedAt: '07:22 AM'
-  },
-  {
-    id: 'task-3',
-    puppyId: 'pup-max-01',
-    title: 'Morning Crate Nap',
-    category: 'sleep',
-    time: '08:00 AM',
-    durationMin: 90,
-    completed: true,
-    skipped: false,
-    period: 'morning',
-    date: new Date().toISOString().split('T')[0],
-    description: 'Cover crate, white noise machine on low',
-    completedAt: '09:35 AM'
-  },
-  {
-    id: 'task-4',
-    puppyId: 'pup-max-01',
-    title: 'Recall Training ("Rocket Come")',
-    category: 'training',
-    time: '10:30 AM',
-    durationMin: 5,
-    completed: false,
-    skipped: false,
-    period: 'morning',
-    date: new Date().toISOString().split('T')[0],
-    description: 'High-value treats. 5 repetitions running backwards in hallway'
-  },
-  {
-    id: 'task-5',
-    puppyId: 'pup-max-01',
-    title: 'Backyard Sniff Walk & Exploration',
-    category: 'walk',
-    time: '11:00 AM',
-    durationMin: 15,
-    completed: false,
-    skipped: false,
-    period: 'morning',
-    date: new Date().toISOString().split('T')[0],
-    description: 'Loose leash on front-clip harness, let puppy lead sniffing'
-  },
-  {
-    id: 'task-6',
-    puppyId: 'pup-max-01',
-    title: 'Lunch & Puzzle Toy Feeding',
-    category: 'feeding',
-    time: '12:00 PM',
-    durationMin: 20,
-    completed: false,
-    skipped: false,
-    period: 'afternoon',
-    date: new Date().toISOString().split('T')[0],
-    description: '0.75 cup kibble inside Bob-A-Lot wobble feeder'
-  },
-  {
-    id: 'task-7',
-    puppyId: 'pup-max-01',
-    title: 'Post-Lunch Potty',
-    category: 'potty',
-    time: '12:30 PM',
-    durationMin: 10,
-    completed: false,
-    skipped: false,
-    period: 'afternoon',
-    date: new Date().toISOString().split('T')[0],
-    description: 'Designated outdoor spot'
-  },
-  {
-    id: 'task-8',
-    puppyId: 'pup-max-01',
-    title: 'Afternoon Deep Rest Nap',
-    category: 'sleep',
-    time: '01:00 PM',
-    durationMin: 120,
-    completed: false,
-    skipped: false,
-    period: 'afternoon',
-    date: new Date().toISOString().split('T')[0],
-    description: 'Quiet time during house rest hours'
-  },
-  {
-    id: 'task-9',
-    puppyId: 'pup-max-01',
-    title: 'Evening Meal & Daily Vitamins',
-    category: 'feeding',
-    time: '05:30 PM',
-    durationMin: 15,
-    completed: false,
-    skipped: false,
-    period: 'evening',
-    date: new Date().toISOString().split('T')[0],
-    description: '1 cup kibble + Omega-3 puppy oil supplement'
-  },
-  {
-    id: 'task-10',
-    puppyId: 'pup-max-01',
-    title: 'Frozen Kong Teething Wind-Down',
-    category: 'custom',
-    time: '07:00 PM',
-    durationMin: 30,
-    completed: false,
-    skipped: false,
-    period: 'night',
-    date: new Date().toISOString().split('T')[0],
-    description: 'Frozen Kong with peanut butter and pumpkin puree to soothe teething gums'
-  }
-];
-
-export const SEED_POTTY_LOGS: PottyLog[] = [
-  {
-    id: 'potty-1',
-    puppyId: 'pup-max-01',
-    type: 'both',
-    location: 'outdoor',
-    timestamp: new Date(Date.now() - 3.5 * 3600000).toISOString(),
-    notes: 'Pee and firm poop at grass patch, rewarded with liver treat'
-  },
-  {
-    id: 'potty-2',
-    puppyId: 'pup-max-01',
-    type: 'pee',
-    location: 'outdoor',
-    timestamp: new Date(Date.now() - 1.5 * 3600000).toISOString(),
-    notes: 'Quick pee within 45 seconds of stepping outside'
-  }
-];
-
-export const SEED_SLEEP_LOGS: SleepLog[] = [
-  {
-    id: 'sleep-1',
-    puppyId: 'pup-max-01',
-    type: 'night',
-    startTime: new Date(Date.now() - 13 * 3600000).toISOString(),
-    endTime: new Date(Date.now() - 4.5 * 3600000).toISOString(),
-    durationMin: 510,
-    notes: 'Slept 8.5 hours uninterrupted in crate without whining'
-  },
-  {
-    id: 'sleep-2',
-    puppyId: 'pup-max-01',
-    type: 'nap',
-    startTime: new Date(Date.now() - 3.5 * 3600000).toISOString(),
-    endTime: new Date(Date.now() - 2.0 * 3600000).toISOString(),
-    durationMin: 90,
-    notes: 'Post-breakfast morning nap on dog bed'
-  }
-];
-
-export const SEED_FEEDING_LOGS: FeedingLog[] = [
-  {
-    id: 'feed-1',
-    puppyId: 'pup-max-01',
-    mealType: 'breakfast',
-    amountCups: 1.0,
-    foodBrand: 'Purina Pro Plan Large Breed Puppy',
-    timestamp: new Date(Date.now() - 4.2 * 3600000).toISOString(),
-    notes: 'Ate well in under 5 minutes with slow feeder bowl'
-  },
-  {
-    id: 'feed-2',
-    puppyId: 'pup-max-01',
-    mealType: 'water',
-    foodBrand: 'Fresh filtered water',
-    timestamp: new Date(Date.now() - 2.0 * 3600000).toISOString(),
-    notes: 'Refilled bowl, drank ~200ml'
-  }
-];
-
-export const SEED_WALK_LOGS: WalkLog[] = [
-  {
-    id: 'walk-1',
-    puppyId: 'pup-max-01',
-    startTime: new Date(Date.now() - 24 * 3600000).toISOString(),
-    durationMin: 18,
-    distanceMiles: 0.45,
-    peesCount: 2,
-    poopsCount: 1,
-    pullingRating: 'mild',
-    reactivityNotes: 'Curious about a passing stroller, sat politely when prompted',
-    notes: 'Good loose leash practice on our block'
-  }
-];
-
-export const SEED_VACCINATIONS: VaccinationRecord[] = [
-  {
-    id: 'vac-1',
-    puppyId: 'pup-max-01',
-    vaccineName: 'DHPP (Distemper, Adenovirus, Parvovirus, Parainfluenza) #1',
-    administeredDate: '2026-07-25',
-    nextDueDate: '2026-08-22',
-    vetClinic: 'City Vet Animal Hospital',
-    status: 'up_to_date',
-    lotNumber: 'DHPP-7729B',
-    notes: 'Tolerated well, slight drowsiness for 4 hours.'
-  },
-  {
-    id: 'vac-2',
-    puppyId: 'pup-max-01',
-    vaccineName: 'DHPP Booster #2 & Bordetella (Intranasal)',
-    administeredDate: '2026-08-22',
-    nextDueDate: '2026-10-12',
-    vetClinic: 'City Vet Animal Hospital',
-    status: 'up_to_date',
-    lotNumber: 'DHPP-9901A',
-    notes: 'Kennel cough intranasal spray completed.'
-  },
-  {
-    id: 'vac-3',
-    puppyId: 'pup-max-01',
-    vaccineName: 'Rabies 1-Year & Final DHPP #3 Booster',
-    administeredDate: '2026-10-12',
-    nextDueDate: '2026-10-12',
-    vetClinic: 'City Vet Animal Hospital',
-    status: 'due_soon',
-    notes: 'Scheduled for 16-week milestone clinic visit.'
-  }
-];
-
-export const SEED_MEDICATIONS: MedicationRecord[] = [
-  {
-    id: 'med-1',
-    puppyId: 'pup-max-01',
-    name: 'Heartgard Plus (Heartworm Prevention)',
-    dosage: '1 chewable tablet (up to 25 lbs)',
-    frequency: 'Monthly (1st of month)',
-    startDate: '2026-08-01',
-    reminderTime: '09:00 AM',
-    active: true,
-    notes: 'Tastes like beef chew, Max eats it like a treat.'
-  },
-  {
-    id: 'med-2',
-    puppyId: 'pup-max-01',
-    name: 'NexGard (Flea & Tick Prevention)',
-    dosage: '1 chewable tablet (10.1 - 24 lbs)',
-    frequency: 'Monthly (1st of month)',
-    startDate: '2026-08-01',
-    reminderTime: '09:00 AM',
-    active: true,
-    notes: 'Next dose due October 1.'
-  }
-];
-
-export const SEED_APPOINTMENTS: VetAppointment[] = [
-  {
-    id: 'apt-1',
-    puppyId: 'pup-max-01',
-    title: 'Puppy 16-Week Booster & Rabies Exam',
-    clinic: 'City Vet Animal Hospital',
-    date: '2026-10-12',
-    time: '03:00 PM',
-    reason: 'Final DHPP booster, Rabies vaccine, dental check, microchip check',
-    status: 'scheduled',
-    doctor: 'Dr. Eleanor Vance',
-    notes: 'Bring stool sample in clean container for routine fecal test.'
-  }
-];
-
-export const SEED_EXPENSES: ExpenseRecord[] = [
-  {
-    id: 'exp-1',
-    puppyId: 'pup-max-01',
-    title: '12-Week Exam, DHPP #2 & Bordetella',
-    category: 'vet',
-    amount: 145.00,
-    date: '2026-08-22',
-    vendor: 'City Vet Animal Hospital'
-  },
-  {
-    id: 'exp-2',
-    puppyId: 'pup-max-01',
-    title: 'Purina Pro Plan Large Puppy 30lb Bag',
-    category: 'food',
-    amount: 72.99,
-    date: '2026-09-02',
-    vendor: 'Chewy.com'
-  },
-  {
-    id: 'exp-3',
-    puppyId: 'pup-max-01',
-    title: 'Puppy Teething KONG & Chew Rope Set',
-    category: 'toys',
-    amount: 28.50,
-    date: '2026-09-10',
-    vendor: 'Petco'
-  },
-  {
-    id: 'exp-4',
-    puppyId: 'pup-max-01',
-    title: 'Healthy Paws Pet Insurance (Monthly)',
-    category: 'insurance',
-    amount: 44.00,
-    date: '2026-09-15',
-    vendor: 'Healthy Paws'
-  }
-];
-
-export const SEED_DOCUMENTS: DocumentRecord[] = [
-  {
-    id: 'doc-1',
-    puppyId: 'pup-max-01',
-    title: 'City Vet Vaccination Card & Health Records',
-    category: 'vaccination',
-    date: '2026-08-22',
-    fileType: 'PDF',
-    fileSize: '1.4 MB',
-    notes: 'Shows DHPP #1, #2, and Bordetella with clinic stamp.'
-  },
-  {
-    id: 'doc-2',
-    puppyId: 'pup-max-01',
-    title: 'Healthy Paws Insurance Certificate & Policy',
-    category: 'insurance',
-    date: '2026-08-12',
-    fileType: 'PDF',
-    fileSize: '840 KB',
-    notes: 'Policy #HP-99201-GLD with $250 annual deductible, 90% reimbursement.'
-  },
-  {
-    id: 'doc-3',
-    puppyId: 'pup-max-01',
-    title: 'HomeAgain Microchip Registration Certificate',
-    category: 'microchip',
-    date: '2026-08-10',
-    fileType: 'PDF',
-    fileSize: '512 KB',
-    notes: 'Registered to primary account holder.'
-  }
-];
-
-export const SEED_BEHAVIOR_LOGS: BehaviorIncident[] = [
-  {
-    id: 'beh-1',
-    puppyId: 'pup-max-01',
-    behaviorType: 'biting',
-    timestamp: new Date(Date.now() - 5 * 3600000).toISOString(),
-    severity: 'mild',
-    trigger: 'Excited game of tug',
-    whatHelped: 'Froze, yelped softly, redirected mouth onto soft squeaky toy immediately',
-    notes: 'Calmed within 20 seconds once toy was provided'
-  }
-];
-
-
-export const SEED_GROOMING_TASKS: GroomingTask[] = [
-  { id: 'g-1', puppyId: 'pup-max-01', type: 'brush', label: 'Daily Coat Brush', lastDone: '2026-09-20', nextDue: '2026-09-21', frequencyDays: 1 },
-  { id: 'g-2', puppyId: 'pup-max-01', type: 'teeth', label: 'Enzymatic Toothpaste', lastDone: '2026-09-19', nextDue: '2026-09-21', frequencyDays: 2 },
-  { id: 'g-3', puppyId: 'pup-max-01', type: 'nails', label: 'Nail Tip Dremel / Clip', lastDone: '2026-09-10', nextDue: '2026-09-24', frequencyDays: 14 },
-  { id: 'g-4', puppyId: 'pup-max-01', type: 'ears', label: 'Ear Canal Check & Wipe', lastDone: '2026-09-15', nextDue: '2026-09-22', frequencyDays: 7 },
-  { id: 'g-5', puppyId: 'pup-max-01', type: 'bath', label: 'Puppy Oatmeal Bath', lastDone: '2026-09-05', nextDue: '2026-10-03', frequencyDays: 28 }
-];
-
-export const SEED_SOCIALIZATION: SocializationItem[] = [
-  {
-    id: 'soc-1',
-    category: 'Surfaces',
-    title: 'Metal grates, tile & hardwood',
-    description: 'Walking confidently across slick and textured flooring',
-    status: 'comfortable',
-    lastUpdated: '2026-09-18'
-  },
-  {
-    id: 'soc-2',
-    category: 'Sounds',
-    title: 'Vacuum cleaner from another room',
-    description: 'Hearing vacuum at low volume while eating frozen Kong',
-    status: 'introduced',
-    lastUpdated: '2026-09-19',
-    notes: 'Showed alert ears but stayed lying down with treat'
-  },
-  {
-    id: 'soc-3',
-    category: 'Sounds',
-    title: 'Traffic & Sirens (Distance)',
-    description: 'Outdoor sidewalk observations of passing buses and cars',
-    status: 'comfortable',
-    lastUpdated: '2026-09-17'
-  },
-  {
-    id: 'soc-4',
-    category: 'People',
-    title: 'Person wearing sunglasses & wide-brim hat',
-    description: 'Neutral observation of diverse apparel without barking',
-    status: 'comfortable',
-    lastUpdated: '2026-09-16'
-  },
-  {
-    id: 'soc-5',
-    category: 'Handling',
-    title: 'Paws, ears, and mouth gentle inspection',
-    description: 'Allows gentle touching of toenails and teeth inspection without squirming',
-    status: 'needs_work',
-    lastUpdated: '2026-09-20',
-    notes: 'Front right paw is sensitive. Pair touch with peanut butter spoon.'
-  },
-  {
-    id: 'soc-6',
-    category: 'Environment',
-    title: 'Car rides in travel crate/harness',
-    description: 'Quiet, nausea-free car trips to fun destinations',
-    status: 'comfortable',
-    lastUpdated: '2026-09-15'
-  }
-];
-
-export const SEED_JOURNAL: JournalEntry[] = [
-  {
-    id: 'jrn-1',
-    puppyId: 'pup-max-01',
-    title: 'First Full Night Without Whining! 🎉',
-    date: '2026-09-18',
-    notes: 'Max slept from 10:00 PM to 6:30 AM in his crate without a single whimper. Truly a golden milestone!',
-    mediaUrl: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=600&q=80',
-    milestoneBadge: 'Sleep Champion'
-  },
-  {
-    id: 'jrn-2',
-    puppyId: 'pup-max-01',
-    title: 'First Outdoor Sit at the Busy Crosswalk',
-    date: '2026-09-14',
-    notes: 'Offered an unprompted polite sit while waiting for the traffic light to change on our morning walk.',
-    mediaUrl: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=600&q=80',
-    milestoneBadge: 'Polite Scholar'
-  }
-];
-
-export const SEED_FAMILY: FamilyMember[] = [
-  {
-    id: 'fam-1',
-    name: 'Sarah Miller',
-    email: 'sarah.miller@example.com',
-    role: 'Owner',
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
-    dateAdded: '2026-08-10'
-  },
-  {
-    id: 'fam-2',
-    name: 'David Miller',
-    email: 'david.miller@example.com',
-    role: 'Caregiver',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-    dateAdded: '2026-08-12'
-  }
-];
-
-export const SEED_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'notif-1',
-    title: 'Vaccination Due Next Month',
-    message: 'Max is due for Rabies and final DHPP booster on October 12 at 3:00 PM at City Vet.',
-    category: 'health',
-    timestamp: '2 hours ago',
-    read: false
-  },
-  {
-    id: 'notif-2',
-    title: 'Training Reminder',
-    message: 'Time for 5-minute Recall Training with high-value treats!',
-    category: 'tasks',
-    timestamp: '15 minutes ago',
-    read: false
-  },
-  {
-    id: 'notif-3',
-    title: 'Email Intelligence Found Appointment',
-    message: 'We detected appointment confirmation from City Vet Animal Hospital.',
-    category: 'calendar',
-    timestamp: 'Yesterday',
-    read: true
-  }
-];
-
-export const SEED_AI_MESSAGES: AIMessage[] = [
-  {
-    id: 'ai-1',
-    sender: 'assistant',
-    text: "Hello! I'm PupLume, your AI puppy co-pilot. I'm actively tracking routines, training, potty rhythm, and health milestones. How can I help you today?",
-    timestamp: '09:00 AM'
-  }
-];
-
-export const SEED_SESSION: UserSession = {
-  isAuthenticated: true,
-  email: 'petparent@example.com',
-  name: 'Pet Parent',
-  plan: 'premium'
-};
 
 const DEFAULT_SETTINGS: UserSettingsData = {
   pottyAlerts: true,
@@ -604,6 +66,7 @@ const DEFAULT_SETTINGS: UserSettingsData = {
   trainingAlerts: true,
   medAlerts: true,
   units: 'imperial',
+  hasCompletedOnboarding: false,
 };
 
 class StorageManager {
@@ -611,27 +74,27 @@ class StorageManager {
   private listeners: Set<() => void> = new Set();
   private hasHydratedFromConvex = false;
 
-  // Active in-memory state scoped to authenticated user
-  private puppies: PuppyProfile[] = [SEED_PUPPY];
-  private activePuppyId: string | null = SEED_PUPPY.id;
-  private tasks: TaskItem[] = [...SEED_TASKS];
-  private pottyLogs: PottyLog[] = [...SEED_POTTY_LOGS];
-  private sleepLogs: SleepLog[] = [...SEED_SLEEP_LOGS];
-  private feedingLogs: FeedingLog[] = [...SEED_FEEDING_LOGS];
-  private walkLogs: WalkLog[] = [...SEED_WALK_LOGS];
+  // Active in-memory state scoped to authenticated user - starts clean with no fake data
+  private puppies: PuppyProfile[] = [];
+  private activePuppyId: string | null = null;
+  private tasks: TaskItem[] = [];
+  private pottyLogs: PottyLog[] = [];
+  private sleepLogs: SleepLog[] = [];
+  private feedingLogs: FeedingLog[] = [];
+  private walkLogs: WalkLog[] = [];
   private trainingLessons: TrainingLesson[] = [...INITIAL_TRAINING_CURRICULUM];
-  private vaccinations: VaccinationRecord[] = [...SEED_VACCINATIONS];
-  private medications: MedicationRecord[] = [...SEED_MEDICATIONS];
-  private appointments: VetAppointment[] = [...SEED_APPOINTMENTS];
-  private expenses: ExpenseRecord[] = [...SEED_EXPENSES];
-  private documents: DocumentRecord[] = [...SEED_DOCUMENTS];
-  private behaviorLogs: BehaviorIncident[] = [...SEED_BEHAVIOR_LOGS];
-  private groomingTasks: GroomingTask[] = [...SEED_GROOMING_TASKS];
-  private socialization: SocializationItem[] = [...SEED_SOCIALIZATION];
-  private journal: JournalEntry[] = [...SEED_JOURNAL];
-  private family: FamilyMember[] = [...SEED_FAMILY];
-  private notifications: NotificationItem[] = [...SEED_NOTIFICATIONS];
-  private aiMessages: AIMessage[] = [...SEED_AI_MESSAGES];
+  private vaccinations: VaccinationRecord[] = [];
+  private medications: MedicationRecord[] = [];
+  private appointments: VetAppointment[] = [];
+  private expenses: ExpenseRecord[] = [];
+  private documents: DocumentRecord[] = [];
+  private behaviorLogs: BehaviorIncident[] = [];
+  private groomingTasks: GroomingTask[] = [];
+  private socialization: SocializationItem[] = [];
+  private journal: JournalEntry[] = [];
+  private family: FamilyMember[] = [];
+  private notifications: NotificationItem[] = [];
+  private aiMessages: AIMessage[] = [];
   private settings: UserSettingsData = { ...DEFAULT_SETTINGS };
 
   constructor() {
@@ -661,9 +124,13 @@ class StorageManager {
     this.currentUserId = userId;
     this.hasHydratedFromConvex = false;
 
-    // Load user cache or local cache
+    // Load user cache or clear state
     this.loadCache();
     this.notifyListeners();
+  }
+
+  getCurrentUserId(): string | null {
+    return this.currentUserId;
   }
 
   private userKey(key: string): string {
@@ -677,58 +144,67 @@ class StorageManager {
       if (cachedPuppies) {
         this.puppies = JSON.parse(cachedPuppies);
         this.activePuppyId = localStorage.getItem(`${prefix}active_puppy_id`) || (this.puppies[0]?.id ?? null);
+      } else {
+        this.puppies = [];
+        this.activePuppyId = null;
       }
 
       const cachedTasks = localStorage.getItem(`${prefix}tasks`);
-      if (cachedTasks) this.tasks = JSON.parse(cachedTasks);
+      this.tasks = cachedTasks ? JSON.parse(cachedTasks) : [];
 
       const cachedPotty = localStorage.getItem(`${prefix}potty_logs`);
-      if (cachedPotty) this.pottyLogs = JSON.parse(cachedPotty);
+      this.pottyLogs = cachedPotty ? JSON.parse(cachedPotty) : [];
 
       const cachedSleep = localStorage.getItem(`${prefix}sleep_logs`);
-      if (cachedSleep) this.sleepLogs = JSON.parse(cachedSleep);
+      this.sleepLogs = cachedSleep ? JSON.parse(cachedSleep) : [];
 
       const cachedFeeding = localStorage.getItem(`${prefix}feeding_logs`);
-      if (cachedFeeding) this.feedingLogs = JSON.parse(cachedFeeding);
+      this.feedingLogs = cachedFeeding ? JSON.parse(cachedFeeding) : [];
 
       const cachedWalk = localStorage.getItem(`${prefix}walk_logs`);
-      if (cachedWalk) this.walkLogs = JSON.parse(cachedWalk);
+      this.walkLogs = cachedWalk ? JSON.parse(cachedWalk) : [];
 
       const cachedLessons = localStorage.getItem(`${prefix}training_lessons`);
-      if (cachedLessons) this.trainingLessons = JSON.parse(cachedLessons);
+      this.trainingLessons = cachedLessons ? JSON.parse(cachedLessons) : [...INITIAL_TRAINING_CURRICULUM];
 
       const cachedVaccinations = localStorage.getItem(`${prefix}vaccinations`);
-      if (cachedVaccinations) this.vaccinations = JSON.parse(cachedVaccinations);
+      this.vaccinations = cachedVaccinations ? JSON.parse(cachedVaccinations) : [];
 
       const cachedMedications = localStorage.getItem(`${prefix}medications`);
-      if (cachedMedications) this.medications = JSON.parse(cachedMedications);
+      this.medications = cachedMedications ? JSON.parse(cachedMedications) : [];
 
       const cachedAppointments = localStorage.getItem(`${prefix}appointments`);
-      if (cachedAppointments) this.appointments = JSON.parse(cachedAppointments);
+      this.appointments = cachedAppointments ? JSON.parse(cachedAppointments) : [];
 
       const cachedExpenses = localStorage.getItem(`${prefix}expenses`);
-      if (cachedExpenses) this.expenses = JSON.parse(cachedExpenses);
+      this.expenses = cachedExpenses ? JSON.parse(cachedExpenses) : [];
 
       const cachedDocuments = localStorage.getItem(`${prefix}documents`);
-      if (cachedDocuments) this.documents = JSON.parse(cachedDocuments);
+      this.documents = cachedDocuments ? JSON.parse(cachedDocuments) : [];
 
       const cachedBehavior = localStorage.getItem(`${prefix}behavior_logs`);
-      if (cachedBehavior) this.behaviorLogs = JSON.parse(cachedBehavior);
+      this.behaviorLogs = cachedBehavior ? JSON.parse(cachedBehavior) : [];
 
       const cachedGrooming = localStorage.getItem(`${prefix}grooming_tasks`);
-      if (cachedGrooming) this.groomingTasks = JSON.parse(cachedGrooming);
+      this.groomingTasks = cachedGrooming ? JSON.parse(cachedGrooming) : [];
 
       const cachedSocialization = localStorage.getItem(`${prefix}socialization`);
-      if (cachedSocialization) this.socialization = JSON.parse(cachedSocialization);
+      this.socialization = cachedSocialization ? JSON.parse(cachedSocialization) : [];
 
       const cachedJournal = localStorage.getItem(`${prefix}journal`);
-      if (cachedJournal) this.journal = JSON.parse(cachedJournal);
+      this.journal = cachedJournal ? JSON.parse(cachedJournal) : [];
 
       const cachedFamily = localStorage.getItem(`${prefix}family`);
-      if (cachedFamily) this.family = JSON.parse(cachedFamily);
+      this.family = cachedFamily ? JSON.parse(cachedFamily) : [];
 
       const cachedSettings = localStorage.getItem(`${prefix}settings`);
-      if (cachedSettings) this.settings = JSON.parse(cachedSettings);
+      this.settings = cachedSettings ? JSON.parse(cachedSettings) : { ...DEFAULT_SETTINGS };
+
+      const cachedNotifications = localStorage.getItem(`${prefix}notifications`);
+      this.notifications = cachedNotifications ? JSON.parse(cachedNotifications) : [];
+
+      const cachedAIMessages = localStorage.getItem(`${prefix}ai_messages`);
+      this.aiMessages = cachedAIMessages ? JSON.parse(cachedAIMessages) : [];
     } catch (e) {
       console.warn('Error loading cache:', e);
     }
@@ -740,6 +216,8 @@ class StorageManager {
       localStorage.setItem(`${prefix}puppies`, JSON.stringify(this.puppies));
       if (this.activePuppyId) {
         localStorage.setItem(`${prefix}active_puppy_id`, this.activePuppyId);
+      } else {
+        localStorage.removeItem(`${prefix}active_puppy_id`);
       }
       localStorage.setItem(`${prefix}tasks`, JSON.stringify(this.tasks));
       localStorage.setItem(`${prefix}potty_logs`, JSON.stringify(this.pottyLogs));
@@ -758,9 +236,35 @@ class StorageManager {
       localStorage.setItem(`${prefix}journal`, JSON.stringify(this.journal));
       localStorage.setItem(`${prefix}family`, JSON.stringify(this.family));
       localStorage.setItem(`${prefix}settings`, JSON.stringify(this.settings));
+      localStorage.setItem(`${prefix}notifications`, JSON.stringify(this.notifications));
+      localStorage.setItem(`${prefix}ai_messages`, JSON.stringify(this.aiMessages));
     } catch (e) {
       console.warn('Error persisting user cache:', e);
     }
+  }
+
+  clearAllUserData(): void {
+    this.puppies = [];
+    this.activePuppyId = null;
+    this.tasks = [];
+    this.pottyLogs = [];
+    this.sleepLogs = [];
+    this.feedingLogs = [];
+    this.walkLogs = [];
+    this.vaccinations = [];
+    this.medications = [];
+    this.appointments = [];
+    this.expenses = [];
+    this.documents = [];
+    this.behaviorLogs = [];
+    this.groomingTasks = [];
+    this.socialization = [];
+    this.journal = [];
+    this.family = [];
+    this.notifications = [];
+    this.aiMessages = [];
+    this.persistUserCache();
+    this.notifyListeners();
   }
 
   // Hydrate authoritative state from Convex reactive subscription
@@ -770,36 +274,39 @@ class StorageManager {
     this.hasHydratedFromConvex = true;
 
     // 1. Puppies
-    if (Array.isArray(cloudData.puppies) && cloudData.puppies.length > 0) {
-      this.puppies = cloudData.puppies.map((p: any) => ({
-        id: p._id || p.id || 'pup-1',
-        name: p.name,
-        breed: p.breed,
-        birthDate: p.birthDate,
-        sex: p.sex,
-        weightLbs: p.weightLbs,
-        photoUrl: p.photoUrl,
-        temperament: p.temperament,
-        dietaryRestrictions: p.dietaryRestrictions,
-        microchipNumber: p.microchipNumber,
-        allergies: p.allergies,
-        vetClinic: p.vetClinic,
-        vetPhone: p.vetPhone,
-        vetName: p.vetName,
-        insuranceProvider: p.insuranceProvider,
-        insurancePolicyNumber: p.insurancePolicyNumber,
-        favoriteTreat: p.favoriteTreat,
-        adoptionDate: p.adoptionDate,
-        createdAt: p.createdAt,
-      }));
+    if (Array.isArray(cloudData.puppies)) {
+      if (cloudData.puppies.length > 0) {
+        this.puppies = cloudData.puppies.map((p: any) => ({
+          id: p._id || p.id || 'pup-1',
+          name: p.name,
+          breed: p.breed,
+          birthDate: p.birthDate,
+          sex: p.sex,
+          weightLbs: p.weightLbs,
+          photoUrl: p.photoUrl,
+          temperament: p.temperament,
+          dietaryRestrictions: p.dietaryRestrictions,
+          microchipNumber: p.microchipNumber,
+          allergies: p.allergies,
+          vetClinic: p.vetClinic,
+          vetPhone: p.vetPhone,
+          vetName: p.vetName,
+          insuranceProvider: p.insuranceProvider,
+          insurancePolicyNumber: p.insurancePolicyNumber,
+          favoriteTreat: p.favoriteTreat,
+          adoptionDate: p.adoptionDate,
+          createdAt: p.createdAt,
+        }));
 
-      // Active puppy
-      const savedActiveId = cloudData.settings?.activePuppyId;
-      if (savedActiveId && this.puppies.some((p) => p.id === savedActiveId)) {
-        this.activePuppyId = savedActiveId;
-      } else if (!this.activePuppyId || !this.puppies.some((p) => p.id === this.activePuppyId)) {
-        this.activePuppyId = this.puppies[0].id;
+        // Active puppy
+        const savedActiveId = cloudData.settings?.activePuppyId;
+        if (savedActiveId && this.puppies.some((p) => p.id === savedActiveId)) {
+          this.activePuppyId = savedActiveId;
+        } else if (this.puppies.length > 0) {
+          this.activePuppyId = this.puppies[0].id;
+        }
       }
+      // If cloudData has 0 puppies but we already have local puppy from onboarding, keep local puppy!
     }
 
     // 2. Settings
@@ -810,31 +317,40 @@ class StorageManager {
         trainingAlerts: cloudData.settings.trainingAlerts ?? true,
         medAlerts: cloudData.settings.medAlerts ?? true,
         units: cloudData.settings.units || 'imperial',
-        activePuppyId: cloudData.settings.activePuppyId,
+        activePuppyId: this.activePuppyId ?? undefined,
+        hasCompletedOnboarding: cloudData.settings.hasCompletedOnboarding ?? (this.puppies.length > 0),
       };
     }
 
-    // 3. Tasks
-    if (Array.isArray(cloudData.tasks) && cloudData.tasks.length > 0) {
-      this.tasks = cloudData.tasks.map((t: any) => ({
-        id: t._id || t.id,
-        puppyId: t.puppyId,
-        title: t.title,
-        category: t.category,
-        time: t.time,
-        durationMin: t.durationMin,
-        completed: t.completed,
-        skipped: t.skipped,
-        period: t.period,
-        date: t.date,
-        description: t.description,
-        notes: t.notes,
-        completedAt: t.completedAt,
-      }));
+    // 3. Tasks - Resilient merge: Never wipe local tasks with an empty cloud response!
+    if (Array.isArray(cloudData.tasks)) {
+      if (cloudData.tasks.length > 0) {
+        const cloudKeys = new Set(cloudData.tasks.map((t: any) => `${t.title}__${t.time}`));
+        const mappedCloudTasks: TaskItem[] = cloudData.tasks.map((t: any) => ({
+          id: t._id || t.id,
+          puppyId: t.puppyId,
+          title: t.title,
+          category: t.category,
+          time: t.time,
+          durationMin: t.durationMin,
+          completed: t.completed,
+          skipped: t.skipped,
+          period: t.period,
+          date: t.date,
+          description: t.description,
+          notes: t.notes,
+          completedAt: t.completedAt,
+        }));
+
+        // Preserve any pending locally created tasks not yet received from cloud
+        const pendingLocal = this.tasks.filter((t) => !cloudKeys.has(`${t.title}__${t.time}`));
+        this.tasks = [...mappedCloudTasks, ...pendingLocal];
+      }
+      // If cloud tasks is empty but we have local tasks (e.g. from onboarding or user added), KEEP local tasks!
     }
 
     // 4. Potty Logs
-    if (Array.isArray(cloudData.pottyLogs) && cloudData.pottyLogs.length > 0) {
+    if (Array.isArray(cloudData.pottyLogs)) {
       this.pottyLogs = cloudData.pottyLogs.map((l: any) => ({
         id: l._id || l.id,
         puppyId: l.puppyId,
@@ -846,7 +362,7 @@ class StorageManager {
     }
 
     // 5. Feeding Logs
-    if (Array.isArray(cloudData.feedingLogs) && cloudData.feedingLogs.length > 0) {
+    if (Array.isArray(cloudData.feedingLogs)) {
       this.feedingLogs = cloudData.feedingLogs.map((l: any) => ({
         id: l._id || l.id,
         puppyId: l.puppyId,
@@ -859,7 +375,7 @@ class StorageManager {
     }
 
     // 6. Sleep Logs
-    if (Array.isArray(cloudData.sleepLogs) && cloudData.sleepLogs.length > 0) {
+    if (Array.isArray(cloudData.sleepLogs)) {
       this.sleepLogs = cloudData.sleepLogs.map((l: any) => ({
         id: l._id || l.id,
         puppyId: l.puppyId,
@@ -872,7 +388,7 @@ class StorageManager {
     }
 
     // 7. Walk Logs
-    if (Array.isArray(cloudData.walkLogs) && cloudData.walkLogs.length > 0) {
+    if (Array.isArray(cloudData.walkLogs)) {
       this.walkLogs = cloudData.walkLogs.map((l: any) => ({
         id: l._id || l.id,
         puppyId: l.puppyId,
@@ -888,14 +404,14 @@ class StorageManager {
     }
 
     // 8. Vaccinations
-    if (Array.isArray(cloudData.vaccinations) && cloudData.vaccinations.length > 0) {
+    if (Array.isArray(cloudData.vaccinations)) {
       this.vaccinations = cloudData.vaccinations.map((v: any) => ({
         id: v._id || v.id,
         puppyId: v.puppyId,
         vaccineName: v.vaccineName || v.name || 'Vaccine',
         administeredDate: v.administeredDate,
         nextDueDate: v.nextDueDate || v.dueDate || '',
-        vetClinic: v.vetClinic || 'City Vet',
+        vetClinic: v.vetClinic || '',
         status: v.status || 'up_to_date',
         lotNumber: v.lotNumber,
         notes: v.notes,
@@ -903,7 +419,7 @@ class StorageManager {
     }
 
     // 9. Medications
-    if (Array.isArray(cloudData.medications) && cloudData.medications.length > 0) {
+    if (Array.isArray(cloudData.medications)) {
       this.medications = cloudData.medications.map((m: any) => ({
         id: m._id || m.id,
         puppyId: m.puppyId,
@@ -918,7 +434,7 @@ class StorageManager {
     }
 
     // 10. Appointments
-    if (Array.isArray(cloudData.appointments) && cloudData.appointments.length > 0) {
+    if (Array.isArray(cloudData.appointments)) {
       this.appointments = cloudData.appointments.map((a: any) => ({
         id: a._id || a.id,
         puppyId: a.puppyId,
@@ -934,7 +450,7 @@ class StorageManager {
     }
 
     // 11. Expenses
-    if (Array.isArray(cloudData.expenses) && cloudData.expenses.length > 0) {
+    if (Array.isArray(cloudData.expenses)) {
       this.expenses = cloudData.expenses.map((e: any) => ({
         id: e._id || e.id,
         puppyId: e.puppyId,
@@ -948,7 +464,7 @@ class StorageManager {
     }
 
     // 12. Documents
-    if (Array.isArray(cloudData.documents) && cloudData.documents.length > 0) {
+    if (Array.isArray(cloudData.documents)) {
       this.documents = cloudData.documents.map((d: any) => ({
         id: d._id || d.id,
         puppyId: d.puppyId,
@@ -957,12 +473,13 @@ class StorageManager {
         date: d.date,
         fileType: d.fileType,
         fileSize: d.fileSize,
+        fileUrl: d.fileUrl,
         notes: d.notes,
       }));
     }
 
     // 13. Behavior Logs
-    if (Array.isArray(cloudData.behaviorLogs) && cloudData.behaviorLogs.length > 0) {
+    if (Array.isArray(cloudData.behaviorLogs)) {
       this.behaviorLogs = cloudData.behaviorLogs.map((b: any) => ({
         id: b._id || b.id,
         puppyId: b.puppyId,
@@ -976,7 +493,7 @@ class StorageManager {
     }
 
     // 14. Grooming Tasks
-    if (Array.isArray(cloudData.groomingTasks) && cloudData.groomingTasks.length > 0) {
+    if (Array.isArray(cloudData.groomingTasks)) {
       this.groomingTasks = cloudData.groomingTasks.map((g: any) => ({
         id: g._id || g.id,
         puppyId: g.puppyId,
@@ -989,7 +506,7 @@ class StorageManager {
     }
 
     // 15. Socialization
-    if (Array.isArray(cloudData.socialization) && cloudData.socialization.length > 0) {
+    if (Array.isArray(cloudData.socialization)) {
       this.socialization = cloudData.socialization.map((s: any) => ({
         id: s._id || s.id,
         category: s.category,
@@ -1002,7 +519,7 @@ class StorageManager {
     }
 
     // 16. Journal
-    if (Array.isArray(cloudData.journalEntries) && cloudData.journalEntries.length > 0) {
+    if (Array.isArray(cloudData.journalEntries)) {
       this.journal = cloudData.journalEntries.map((j: any) => ({
         id: j._id || j.id,
         puppyId: j.puppyId,
@@ -1015,7 +532,7 @@ class StorageManager {
     }
 
     // 17. Training Lessons Status
-    if (Array.isArray(cloudData.trainingLessons) && cloudData.trainingLessons.length > 0) {
+    if (Array.isArray(cloudData.trainingLessons)) {
       const lessonMap = new Map(cloudData.trainingLessons.map((l: any) => [l.lessonId, l]));
       this.trainingLessons = INITIAL_TRAINING_CURRICULUM.map((lesson) => {
         const cloudLesson: any = lessonMap.get(lesson.id);
@@ -1032,7 +549,7 @@ class StorageManager {
     }
 
     // 18. Notifications
-    if (Array.isArray(cloudData.notifications) && cloudData.notifications.length > 0) {
+    if (Array.isArray(cloudData.notifications)) {
       this.notifications = cloudData.notifications.map((n: any) => ({
         id: n._id || n.id,
         title: n.title,
@@ -1044,7 +561,7 @@ class StorageManager {
     }
 
     // 19. AI Messages
-    if (Array.isArray(cloudData.aiMessages) && cloudData.aiMessages.length > 0) {
+    if (Array.isArray(cloudData.aiMessages)) {
       this.aiMessages = cloudData.aiMessages.map((m: any) => ({
         id: m._id || m.id,
         sender: m.sender as 'user' | 'assistant',
@@ -1054,7 +571,7 @@ class StorageManager {
     }
 
     // 20. Family Members
-    if (Array.isArray(cloudData.familyMembers) && cloudData.familyMembers.length > 0) {
+    if (Array.isArray(cloudData.familyMembers)) {
       this.family = cloudData.familyMembers.map((f: any) => ({
         id: f._id || f.id,
         name: f.name,
@@ -1088,7 +605,7 @@ class StorageManager {
     this.settings.activePuppyId = id;
     this.persistUserCache();
     this.notifyListeners();
-    syncSettingsToConvex(this.settings).catch(() => {});
+    syncSettingsToConvex(this.settings, this.currentUserId || undefined).catch(() => {});
   }
 
   savePuppy(puppy: PuppyProfile): void {
@@ -1101,7 +618,7 @@ class StorageManager {
     this.activePuppyId = puppy.id;
     this.persistUserCache();
     this.notifyListeners();
-    syncPuppyToConvex(puppy).catch(() => {});
+    syncPuppyToConvex(puppy, this.currentUserId || undefined).catch(() => {});
   }
 
   // Tasks
@@ -1137,7 +654,7 @@ class StorageManager {
     this.notifyListeners();
 
     if (taskTitle) {
-      toggleTaskInConvex(taskTitle, targetCompleted).catch(() => {});
+      toggleTaskInConvex(taskTitle, targetCompleted, this.currentUserId || undefined).catch(() => {});
     }
 
     return this.tasks;
@@ -1157,21 +674,34 @@ class StorageManager {
     this.notifyListeners();
 
     if (taskTitle) {
-      skipTaskInConvex(taskTitle).catch(() => {});
+      skipTaskInConvex(taskTitle, this.currentUserId || undefined).catch(() => {});
     }
 
     return this.tasks;
   }
 
   addTask(task: Omit<TaskItem, 'id'>): TaskItem {
+    const activePup = this.getActivePuppy();
     const newTask: TaskItem = {
       ...task,
       id: `task-${Date.now()}`,
+      puppyId: task.puppyId || activePup?.id || 'pup-1',
+      title: task.title.trim(),
+      category: task.category || 'custom',
+      time: task.time || '10:00 AM',
+      durationMin: Number(task.durationMin) || 15,
+      completed: Boolean(task.completed),
+      skipped: Boolean(task.skipped),
+      period: task.period || 'morning',
+      date: task.date || new Date().toISOString().split('T')[0],
+      description: task.description || '',
     };
-    this.tasks.push(newTask);
+    this.tasks = [newTask, ...this.tasks];
     this.persistUserCache();
     this.notifyListeners();
-    syncTaskToConvex(newTask).catch(() => {});
+    syncTaskToConvex(newTask, this.currentUserId || undefined).catch((err) => {
+      console.debug('[storage] syncTaskToConvex note:', err);
+    });
     return newTask;
   }
 
@@ -1185,7 +715,7 @@ class StorageManager {
     this.pottyLogs.unshift(newLog);
     this.persistUserCache();
     this.notifyListeners();
-    syncPottyLogToConvex(newLog).catch(() => {});
+    syncPottyLogToConvex(newLog, this.currentUserId || undefined).catch(() => {});
     return newLog;
   }
 
@@ -1205,7 +735,7 @@ class StorageManager {
     this.sleepLogs.unshift(newLog);
     this.persistUserCache();
     this.notifyListeners();
-    syncSleepLogToConvex(newLog).catch(() => {});
+    syncSleepLogToConvex(newLog, this.currentUserId || undefined).catch(() => {});
     return newLog;
   }
 
@@ -1225,7 +755,7 @@ class StorageManager {
     this.feedingLogs.unshift(newLog);
     this.persistUserCache();
     this.notifyListeners();
-    syncFeedingLogToConvex(newLog).catch(() => {});
+    syncFeedingLogToConvex(newLog, this.currentUserId || undefined).catch(() => {});
     return newLog;
   }
 
@@ -1245,7 +775,7 @@ class StorageManager {
     this.walkLogs.unshift(newLog);
     this.persistUserCache();
     this.notifyListeners();
-    syncWalkLogToConvex(newLog).catch(() => {});
+    syncWalkLogToConvex(newLog, this.currentUserId || undefined).catch(() => {});
     return newLog;
   }
 
@@ -1284,7 +814,7 @@ class StorageManager {
 
     const activePup = this.getActivePuppy();
     if (activePup) {
-      syncTrainingLessonToConvex(activePup.id, lessonId, completed, mastered).catch(() => {});
+      syncTrainingLessonToConvex(activePup.id, lessonId, completed, mastered, this.currentUserId || undefined).catch(() => {});
     }
 
     return this.trainingLessons;
@@ -1300,7 +830,7 @@ class StorageManager {
     this.vaccinations.push(newVac);
     this.persistUserCache();
     this.notifyListeners();
-    syncVaccinationToConvex(newVac).catch(() => {});
+    syncVaccinationToConvex(newVac, this.currentUserId || undefined).catch(() => {});
     return newVac;
   }
 
@@ -1319,7 +849,7 @@ class StorageManager {
     this.medications.push(newMed);
     this.persistUserCache();
     this.notifyListeners();
-    syncMedicationToConvex(newMed).catch(() => {});
+    syncMedicationToConvex(newMed, this.currentUserId || undefined).catch(() => {});
     return newMed;
   }
 
@@ -1338,7 +868,7 @@ class StorageManager {
     this.appointments.push(newApt);
     this.persistUserCache();
     this.notifyListeners();
-    syncAppointmentToConvex(newApt).catch(() => {});
+    syncAppointmentToConvex(newApt, this.currentUserId || undefined).catch(() => {});
     return newApt;
   }
 
@@ -1358,7 +888,7 @@ class StorageManager {
     this.expenses.unshift(newExp);
     this.persistUserCache();
     this.notifyListeners();
-    syncExpenseToConvex(newExp).catch(() => {});
+    syncExpenseToConvex(newExp, this.currentUserId || undefined).catch(() => {});
     return newExp;
   }
 
@@ -1378,7 +908,7 @@ class StorageManager {
     this.documents.unshift(newDoc);
     this.persistUserCache();
     this.notifyListeners();
-    syncDocumentToConvex(newDoc).catch(() => {});
+    syncDocumentToConvex(newDoc, this.currentUserId || undefined).catch(() => {});
     return newDoc;
   }
 
@@ -1386,7 +916,7 @@ class StorageManager {
     this.documents = this.documents.filter((d) => d.id !== id);
     this.persistUserCache();
     this.notifyListeners();
-    removeDocumentFromConvex(id).catch(() => {});
+    removeDocumentFromConvex(id, this.currentUserId || undefined).catch(() => {});
   }
 
   // Behavior
@@ -1399,7 +929,7 @@ class StorageManager {
     this.behaviorLogs.unshift(newBeh);
     this.persistUserCache();
     this.notifyListeners();
-    syncBehaviorLogToConvex(newBeh).catch(() => {});
+    syncBehaviorLogToConvex(newBeh, this.currentUserId || undefined).catch(() => {});
     return newBeh;
   }
 
@@ -1414,7 +944,7 @@ class StorageManager {
     this.notifyListeners();
     const activePup = this.getActivePuppy();
     if (activePup) {
-      syncGroomingTasksToConvex(activePup.id, tasks).catch(() => {});
+      syncGroomingTasksToConvex(activePup.id, tasks, this.currentUserId || undefined).catch(() => {});
     }
   }
 
@@ -1443,10 +973,37 @@ class StorageManager {
 
     const activePup = this.getActivePuppy();
     if (activePup && updatedItem) {
-      syncSocializationToConvex(activePup.id, updatedItem).catch(() => {});
+      syncSocializationToConvex(activePup.id, updatedItem, this.currentUserId || undefined).catch(() => {});
     }
 
     return this.socialization;
+  }
+
+  addSocializationItem(item: {
+    puppyId?: string;
+    title: string;
+    category: string;
+    status: any;
+    description?: string;
+    notes?: string;
+  }): SocializationItem {
+    const newItem: SocializationItem = {
+      id: `soc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      category: item.category,
+      title: item.title,
+      description: item.description || '',
+      status: item.status,
+      notes: item.notes,
+      lastUpdated: new Date().toISOString().split('T')[0],
+    };
+    this.socialization.push(newItem);
+    this.persistUserCache();
+    this.notifyListeners();
+    const activePup = this.getActivePuppy();
+    if (activePup) {
+      syncSocializationToConvex(activePup.id, newItem, this.currentUserId || undefined).catch(() => {});
+    }
+    return newItem;
   }
 
   // Journal
@@ -1459,7 +1016,7 @@ class StorageManager {
     this.journal.unshift(newEntry);
     this.persistUserCache();
     this.notifyListeners();
-    syncJournalEntryToConvex(newEntry).catch(() => {});
+    syncJournalEntryToConvex(newEntry, this.currentUserId || undefined).catch(() => {});
     return newEntry;
   }
 
@@ -1480,14 +1037,17 @@ class StorageManager {
     this.persistUserCache();
     this.notifyListeners();
     const activePup = this.getActivePuppy();
-    syncFamilyMemberToConvex({
-      puppyId: activePup?.id,
-      name: newMember.name,
-      email: newMember.email,
-      role: newMember.role,
-      avatarUrl: newMember.avatarUrl,
-      dateAdded: newMember.dateAdded,
-    }).catch(() => {});
+    syncFamilyMemberToConvex(
+      {
+        puppyId: activePup?.id,
+        name: newMember.name,
+        email: newMember.email,
+        role: newMember.role,
+        avatarUrl: newMember.avatarUrl,
+        dateAdded: newMember.dateAdded,
+      },
+      this.currentUserId || undefined
+    ).catch(() => {});
     return newMember;
   }
 
@@ -1495,7 +1055,7 @@ class StorageManager {
     this.family = this.family.filter((f) => f.id !== id);
     this.persistUserCache();
     this.notifyListeners();
-    removeFamilyMemberFromConvex(id).catch(() => {});
+    removeFamilyMemberFromConvex(id, this.currentUserId || undefined).catch(() => {});
   }
 
   // Notifications
@@ -1507,14 +1067,14 @@ class StorageManager {
     this.notifications = this.notifications.map((n) => (n.id === id ? { ...n, read: true } : n));
     this.persistUserCache();
     this.notifyListeners();
-    syncNotificationReadToConvex(id).catch(() => {});
+    syncNotificationReadToConvex(id, this.currentUserId || undefined).catch(() => {});
   }
 
   markAllNotificationsRead(): void {
     this.notifications = this.notifications.map((n) => ({ ...n, read: true }));
     this.persistUserCache();
     this.notifyListeners();
-    syncAllNotificationsReadToConvex().catch(() => {});
+    syncAllNotificationsReadToConvex(this.currentUserId || undefined).catch(() => {});
   }
 
   // AI Chat
@@ -1528,7 +1088,7 @@ class StorageManager {
     this.notifyListeners();
     const activePup = this.getActivePuppy();
     if (activePup) {
-      syncAIMessagesToConvex(activePup.id, messages).catch(() => {});
+      syncAIMessagesToConvex(activePup.id, messages, this.currentUserId || undefined).catch(() => {});
     }
   }
 
@@ -1538,7 +1098,7 @@ class StorageManager {
     this.notifyListeners();
     const activePup = this.getActivePuppy();
     if (activePup) {
-      syncAIMessageToConvex(activePup.id, msg).catch(() => {});
+      syncAIMessageToConvex(activePup.id, msg, this.currentUserId || undefined).catch(() => {});
     }
   }
 
@@ -1551,16 +1111,21 @@ class StorageManager {
     this.settings = { ...this.settings, ...newSettings };
     this.persistUserCache();
     this.notifyListeners();
-    syncSettingsToConvex(this.settings).catch(() => {});
+    syncSettingsToConvex(this.settings, this.currentUserId || undefined).catch(() => {});
     return this.settings;
   }
 
   // Session
   getSession(): UserSession {
-    return SEED_SESSION;
+    return {
+      isAuthenticated: !!this.currentUserId,
+      email: '',
+      name: '',
+      plan: 'premium',
+    };
   }
 
-  saveSession(session: UserSession): void {
+  saveSession(_session: UserSession): void {
     // Session is handled via Clerk
   }
 
@@ -1568,41 +1133,41 @@ class StorageManager {
   clearActiveSession(): void {
     this.currentUserId = null;
     this.hasHydratedFromConvex = false;
-    this.resetToDefaults();
+    this.clearAll();
   }
 
   clearAll(): void {
-    this.resetToDefaults();
-  }
-
-  resetAll(): void {
-    this.resetToDefaults();
-  }
-
-  resetToDefaults(): void {
-    this.puppies = [SEED_PUPPY];
-    this.activePuppyId = SEED_PUPPY.id;
-    this.tasks = [...SEED_TASKS];
-    this.pottyLogs = [...SEED_POTTY_LOGS];
-    this.sleepLogs = [...SEED_SLEEP_LOGS];
-    this.feedingLogs = [...SEED_FEEDING_LOGS];
-    this.walkLogs = [...SEED_WALK_LOGS];
+    this.puppies = [];
+    this.activePuppyId = null;
+    this.tasks = [];
+    this.pottyLogs = [];
+    this.sleepLogs = [];
+    this.feedingLogs = [];
+    this.walkLogs = [];
     this.trainingLessons = [...INITIAL_TRAINING_CURRICULUM];
-    this.vaccinations = [...SEED_VACCINATIONS];
-    this.medications = [...SEED_MEDICATIONS];
-    this.appointments = [...SEED_APPOINTMENTS];
-    this.expenses = [...SEED_EXPENSES];
-    this.documents = [...SEED_DOCUMENTS];
-    this.behaviorLogs = [...SEED_BEHAVIOR_LOGS];
-    this.groomingTasks = [...SEED_GROOMING_TASKS];
-    this.socialization = [...SEED_SOCIALIZATION];
-    this.journal = [...SEED_JOURNAL];
-    this.family = [...SEED_FAMILY];
-    this.notifications = [...SEED_NOTIFICATIONS];
-    this.aiMessages = [...SEED_AI_MESSAGES];
+    this.vaccinations = [];
+    this.medications = [];
+    this.appointments = [];
+    this.expenses = [];
+    this.documents = [];
+    this.behaviorLogs = [];
+    this.groomingTasks = [];
+    this.socialization = [];
+    this.journal = [];
+    this.family = [];
+    this.notifications = [];
+    this.aiMessages = [];
     this.settings = { ...DEFAULT_SETTINGS };
     this.persistUserCache();
     this.notifyListeners();
+  }
+
+  resetAll(): void {
+    this.clearAll();
+  }
+
+  resetToDefaults(): void {
+    this.clearAll();
   }
 
   // Export data as JSON
@@ -1680,6 +1245,80 @@ class StorageManager {
 
   clearSession(): void {
     this.clearActiveSession();
+  }
+
+  // 24/7 Real-Time Cloud Synchronization to Convex
+  async syncFullStateToConvex(userId?: string): Promise<void> {
+    const uid = userId || this.currentUserId;
+    if (!uid) return;
+
+    try {
+      const pup = this.getActivePuppy();
+      if (pup) {
+        await syncPuppyToConvex(pup, uid);
+      }
+
+      for (const t of this.tasks) {
+        await syncTaskToConvex(t, uid);
+      }
+      for (const p of this.pottyLogs) {
+        await syncPottyLogToConvex(p, uid);
+      }
+      for (const f of this.feedingLogs) {
+        await syncFeedingLogToConvex(f, uid);
+      }
+      for (const s of this.sleepLogs) {
+        await syncSleepLogToConvex(s, uid);
+      }
+      for (const w of this.walkLogs) {
+        await syncWalkLogToConvex(w, uid);
+      }
+      for (const v of this.vaccinations) {
+        await syncVaccinationToConvex(v, uid);
+      }
+      for (const m of this.medications) {
+        await syncMedicationToConvex(m, uid);
+      }
+      for (const a of this.appointments) {
+        await syncAppointmentToConvex(a, uid);
+      }
+      for (const e of this.expenses) {
+        await syncExpenseToConvex(e, uid);
+      }
+      for (const d of this.documents) {
+        await syncDocumentToConvex(d, uid);
+      }
+      for (const b of this.behaviorLogs) {
+        await syncBehaviorLogToConvex(b, uid);
+      }
+      if (pup && this.groomingTasks.length > 0) {
+        await syncGroomingTasksToConvex(pup.id, this.groomingTasks, uid);
+      }
+      if (pup) {
+        for (const s of this.socialization) {
+          await syncSocializationToConvex(pup.id, s, uid);
+        }
+      }
+      for (const j of this.journal) {
+        await syncJournalEntryToConvex(j, uid);
+      }
+      for (const f of this.family) {
+        await syncFamilyMemberToConvex(
+          {
+            puppyId: pup?.id,
+            name: f.name,
+            email: f.email,
+            role: f.role,
+            avatarUrl: f.avatarUrl,
+            dateAdded: f.dateAdded,
+          },
+          uid
+        );
+      }
+      await syncSettingsToConvex(this.settings, uid);
+    } catch (e) {
+      console.debug('[StorageManager] syncFullStateToConvex error:', e);
+    }
   }
 }
 

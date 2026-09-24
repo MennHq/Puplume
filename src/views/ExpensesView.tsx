@@ -52,7 +52,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({ puppy }) => {
       title,
       amount: val,
       category,
-      vendor: vendor || 'Pet Store',
+      vendor: vendor.trim() || 'Store',
       date
     });
     setExpenses(storage.getExpenses());
@@ -181,9 +181,16 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({ puppy }) => {
         </h3>
 
         <div className="space-y-2.5">
-          {expenses.map((exp) => (
-            <div
-              key={exp.id}
+          {expenses.length === 0 ? (
+            <div className="p-8 text-center text-xs text-[#766A63]">
+              <DollarSign className="w-8 h-8 text-[#8B5E3C]/40 mx-auto mb-2" />
+              <p className="font-semibold text-[#2C211B]">No expenses recorded yet</p>
+              <p className="mt-0.5">Track your vet bills, food, training gear, and supplies for {puppy.name}.</p>
+            </div>
+          ) : (
+            expenses.map((exp) => (
+              <div
+                key={exp.id}
               className="p-3.5 rounded-xl border border-[#E8DDD3] bg-white hover:bg-[#FFF9F2] transition-colors flex items-center justify-between gap-3"
             >
               <div className="flex items-center gap-3">
@@ -215,7 +222,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({ puppy }) => {
                 </button>
               </div>
             </div>
-          ))}
+          )))}
         </div>
       </div>
 

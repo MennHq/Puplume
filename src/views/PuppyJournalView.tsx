@@ -7,12 +7,14 @@ import {
   Camera, 
   Trash2, 
   Award, 
-  Share2 
+  Share2,
+  Cloud 
 } from 'lucide-react';
 import { PuppyProfile } from '../types';
 import { storage } from '../lib/storage';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { CloudinaryImageUploader } from '../components/ui/CloudinaryImageUploader';
 
 interface PuppyJournalViewProps {
   puppy: PuppyProfile;
@@ -86,11 +88,23 @@ export const PuppyJournalView: React.FC<PuppyJournalViewProps> = ({ puppy }) => 
 
       {/* Entries List */}
       <div className="space-y-4">
-        {entries.map((entry) => (
-          <div
-            key={entry.id}
-            className="p-5 rounded-3xl bg-white border border-[#E8DDD3] shadow-xs space-y-3"
-          >
+        {entries.length === 0 ? (
+          <div className="p-12 text-center bg-white rounded-3xl border border-[#E8DDD3] shadow-xs">
+            <Heart className="w-10 h-10 text-[#8B5E3C]/60 mx-auto mb-2" />
+            <h4 className="text-sm font-bold text-[#2C211B] mb-1">No journal memories yet</h4>
+            <p className="text-xs text-[#766A63] max-w-sm mx-auto mb-4">
+              Write down your puppy&apos;s first days, breakthroughs, and fun memories with {puppy.name}.
+            </p>
+            <Button size="sm" variant="primary" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsAddOpen(true)}>
+              Write First Memory
+            </Button>
+          </div>
+        ) : (
+          entries.map((entry) => (
+            <div
+              key={entry.id}
+              className="p-5 rounded-3xl bg-white border border-[#E8DDD3] shadow-xs space-y-3"
+            >
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-bold text-[#8B5E3C] flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
@@ -130,7 +144,7 @@ export const PuppyJournalView: React.FC<PuppyJournalViewProps> = ({ puppy }) => 
             )}
 
           </div>
-        ))}
+        )))}
       </div>
 
       {/* Add Modal */}
@@ -179,14 +193,15 @@ export const PuppyJournalView: React.FC<PuppyJournalViewProps> = ({ puppy }) => 
 
           <div>
             <label className="block text-xs font-bold text-[#2C211B] uppercase tracking-wider mb-1">
-              Photo URL (Optional)
+              Pet Photo / Memory Picture (Cloudinary Connected)
             </label>
-            <input
-              type="url"
-              value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)}
-              placeholder="https://images.unsplash.com/..."
-              className="w-full px-3.5 py-2 rounded-xl border border-[#E8DDD3] bg-[#FFF9F2] text-xs focus:outline-none focus:border-[#8B5E3C]"
+            <CloudinaryImageUploader
+              currentImageUrl={photoUrl}
+              onUploadSuccess={(url) => setPhotoUrl(url)}
+              folder="puplume/journal"
+              label="Upload Memory Photo"
+              sublabel="Upload pet picture to Cloudinary and attach to this memory"
+              variant="card"
             />
           </div>
 

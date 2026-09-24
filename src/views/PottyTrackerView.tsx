@@ -139,25 +139,47 @@ export const PottyTrackerView: React.FC<PottyTrackerViewProps> = ({ puppy }) => 
       {/* Intelligence & Analytics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Potty Countdown */}
-        <div className="p-5 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#766A63]">
-                Next Predicted Window
-              </span>
+        {(() => {
+          const birthDate = new Date(puppy.birthDate);
+          const ageWeeks = Math.max(1, Math.floor((Date.now() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+          const maxIntervalMin = Math.min(240, Math.max(45, Math.round((ageWeeks / 4) * 60)));
+          const lastLog = logs[0];
+          let remainingMin = maxIntervalMin;
+          let hasRecent = false;
+
+          if (lastLog) {
+            const lastTime = new Date(lastLog.timestamp).getTime();
+            if (!isNaN(lastTime)) {
+              const elapsedMin = Math.floor((Date.now() - lastTime) / 60000);
+              remainingMin = Math.max(0, maxIntervalMin - elapsedMin);
+              hasRecent = true;
+            }
+          }
+
+          return (
+            <div className="p-5 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${hasRecent ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#766A63]">
+                    Next Predicted Window
+                  </span>
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-[#2C211B] mt-1 font-mono">
+                  {hasRecent ? (remainingMin === 0 ? 'Due Now' : `~${remainingMin} min`) : 'Ready to Start'}
+                </div>
+                <p className="text-xs text-[#766A63] mt-1">
+                  {hasRecent
+                    ? `Based on ${ageWeeks}-week bladder capacity (~${maxIntervalMin} min interval).`
+                    : `Log ${puppy.name}'s first break to calibrate personalized countdowns.`}
+                </p>
+              </div>
+              <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-700">
+                <Clock className="w-8 h-8" />
+              </div>
             </div>
-            <div className="text-3xl font-black text-[#2C211B] mt-1 font-mono">
-              ~25 min
-            </div>
-            <p className="text-xs text-[#766A63] mt-1">
-              Take {puppy.name} outside at 11:30 AM before high-energy play.
-            </p>
-          </div>
-          <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-700">
-            <Clock className="w-8 h-8" />
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Success Rate */}
         <div className="p-5 rounded-2xl bg-white border border-[#E8DDD3] shadow-xs flex items-center justify-between">
@@ -166,13 +188,15 @@ export const PottyTrackerView: React.FC<PottyTrackerViewProps> = ({ puppy }) => 
               Reliability Score
             </span>
             <div className="text-3xl font-black text-[#2C211B] mt-1">
-              {successPercentage}%
+              {totalCount > 0 ? `${successPercentage}%` : '—'}
             </div>
             <p className="text-xs text-[#766A63] mt-1">
-              {outdoorCount} outdoor vs {totalCount - outdoorCount} indoor slips
+              {totalCount > 0 
+                ? `${outdoorCount} outdoor vs ${totalCount - outdoorCount} indoor slips`
+                : 'No logs recorded yet'}
             </p>
           </div>
-          <ProgressRing completed={outdoorCount} total={totalCount} size={70} strokeWidth={7} />
+          <ProgressRing completed={outdoorCount} total={totalCount > 0 ? totalCount : 1} size={70} strokeWidth={7} />
         </div>
       </div>
 
@@ -183,7 +207,14 @@ export const PottyTrackerView: React.FC<PottyTrackerViewProps> = ({ puppy }) => 
         </h3>
 
         <div className="space-y-2.5">
-          {logs.map((log) => {
+          {logs.length === 0 ? (
+            <div className="p-8 text-center text-xs text-[#766A63]">
+              <Droplet className="w-8 h-8 text-[#8B5E3C]/40 mx-auto mb-2" />
+              <p className="font-semibold text-[#2C211B]">No potty events logged yet</p>
+              <p className="mt-0.5">Use the 1-Tap Quick Action buttons above to start tracking {puppy.name}&apos;s rhythm.</p>
+            </div>
+          ) : (
+            logs.map((log) => {
             const isAccident = log.location === 'indoor_accident' || log.type === 'accident';
             const dateStr = new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             return (
@@ -225,7 +256,7 @@ export const PottyTrackerView: React.FC<PottyTrackerViewProps> = ({ puppy }) => 
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
       </div>
 

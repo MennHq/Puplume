@@ -43,6 +43,7 @@ export default defineSchema({
     medAlerts: v.boolean(),
     units: v.string(), // "imperial" | "metric"
     activePuppyId: v.optional(v.string()),
+    hasCompletedOnboarding: v.optional(v.boolean()),
     updatedAt: v.string(),
   }).index("by_user", ["userId"]),
 
@@ -249,6 +250,7 @@ export default defineSchema({
     date: v.string(),
     fileType: v.string(),
     fileSize: v.string(),
+    fileUrl: v.optional(v.string()),
     notes: v.optional(v.string()),
   })
     .index("by_puppy", ["puppyId"])

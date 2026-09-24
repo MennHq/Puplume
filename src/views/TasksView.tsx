@@ -54,17 +54,17 @@ export const TasksView: React.FC<TasksViewProps> = ({ puppy, onOpenLesson }) => 
     if (!title.trim()) return;
     storage.addTask({
       puppyId: puppy.id,
-      title,
+      title: title.trim(),
       category,
-      time,
+      time: time.trim() || '10:00 AM',
       durationMin: parseInt(durationMin, 10) || 15,
       completed: false,
       skipped: false,
       period,
-      description,
+      description: description.trim(),
       date: new Date().toISOString().split('T')[0]
     });
-    setTasks(storage.getTasks());
+    setTasks([...storage.getTasks()]);
     setIsAddOpen(false);
     setTitle('');
     setDescription('');
@@ -184,7 +184,25 @@ export const TasksView: React.FC<TasksViewProps> = ({ puppy, onOpenLesson }) => 
 
       {/* Task List */}
       <div className="space-y-2.5">
-        {filteredTasks.length === 0 ? (
+        {tasks.length === 0 ? (
+          <div className="p-12 text-center bg-white rounded-3xl border border-[#E8DDD3] shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-[#F3E7DA] text-[#8B5E3C] flex items-center justify-center mx-auto mb-3">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-[#2C211B] mb-1">No tasks scheduled yet</h3>
+            <p className="text-xs text-[#766A63] max-w-sm mx-auto mb-4">
+              Add meals, walks, potty breaks, and training sessions to establish a daily routine for {puppy.name}.
+            </p>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => setIsAddOpen(true)}
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              Add First Task
+            </Button>
+          </div>
+        ) : filteredTasks.length === 0 ? (
           <div className="p-12 text-center bg-white rounded-2xl border border-[#E8DDD3] text-xs text-[#766A63]">
             <CheckCircle2 className="w-8 h-8 text-[#A8B59A] mx-auto mb-2" />
             No tasks found matching your filter criteria.

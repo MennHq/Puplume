@@ -9,7 +9,7 @@ const PADDLE_PRICE_ID = "pri_01m43jma0epjpm0dhn9k3rbp47";
 
 export default function CheckoutPage() {
   const [paddle, setPaddle] = useState<Paddle>();
-  const paddleRef = useRef<Paddle>();
+  const paddleRef = useRef<Paddle | undefined>(undefined);
   const initialized = useRef(false);
   useEffect(() => {
     if (initialized.current) return;

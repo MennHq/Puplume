@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "skills": {
+    "cookie-policy-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "skillPath": "skills/pages/legal/cookie-policy/SKILL.md",
+      "computedHash": "32844c8811f92a071c1c671ddd5f06072b805229c20932c1484997fc445cd5be"
+    },
+    "legal-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "skillPath": "skills/pages/legal/legal/SKILL.md",
+      "computedHash": "9e79e4193458e657be1eaafc26cdac32c480bbfd743fac7f5bbf0d2ef9216660"
+    },
+    "privacy-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "skillPath": "skills/pages/legal/privacy/SKILL.md",
+      "computedHash": "06b33cd03487e959f7451bc131804dffb370b4a667b8196d0eec8de72048c31b"
+    },
+    "refund-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "skillPath": "skills/pages/legal/refund/SKILL.md",
+      "computedHash": "30aa87f77a8791a0b72b9a143a74e0ea551c05c5a04432f0490249c1b93ff39f"
+    },
+    "shipping-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "skillPath": "skills/pages/legal/shipping/SKILL.md",
+      "computedHash": "39c1204d9760a38db441c3c69f89ad52af8e9ee8f9b86111462b2f850d811e58"
+    },
+    "terms-page-generator": {
+      "source": "kostja94/marketing-skills",
+      "sourceType": "github",
+      "skillPath": "skills/pages/legal/terms/SKILL.md",
+      "computedHash": "ea99cec22b5f586fee12a23b2f3a296ce059057d7d50ed5a11c37623db1fb280"
+    }
+  }
+}

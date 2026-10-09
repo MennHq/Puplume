@@ -1,0 +1,21 @@
+# PupLume
+> The ultimate intelligent companion for new dog parents.
+
+PupLume is a mobile-first web application designed specifically for puppy owners. It acts as a digital organizer and AI co-pilot for the critical first year of a dog's life.
+
+## Core Features
+1. **Smart Logging:** Track potty breaks, meals, sleep, and training sessions. The app analyzes patterns to predict when the puppy needs to go out next.
+2. **AI Insights:** Built-in AI assistant that gives personalized advice based on the puppy's breed, age in weeks, and recorded behavior.
+3. **Health Center:** Secure cloud storage for vaccine records, weight history, and vet reminders.
+4. **Training Academy:** Step-by-step curriculum for crate training, biting inhibition, and basic obedience.
+5. **Family Sync:** Real-time synchronization across multiple devices so partners, kids, or dog walkers are always up to date.
+
+## Pricing
+PupLume offers a **Lifetime Access** model for a one-time payment of $24.99. No recurring monthly subscriptions.
+
+## Audience
+Targeted at first-time dog owners, busy professionals with new puppies, and families wanting to coordinate pet care.
+
+## Support & Links
+- Website: https://puplume.com
+- Support: support@puplume.com

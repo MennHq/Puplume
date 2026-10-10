@@ -91,7 +91,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
+      </main>`n      {/* Footer */}
       <footer className="border-t border-[#E8DDD3] bg-[#FFF9F2] pt-16 pb-8">
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-16">

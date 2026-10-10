@@ -40,7 +40,7 @@ export default function RefundPolicy() {
           If you believe your situation qualifies for an exception, please email us directly at:
         </p>
         <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100 inline-block">
-          <p className="font-bold text-zinc-900"><a href="mailto:support@puplume.com" className="text-[#8B5E3C] hover:underline">support@puplume.com</a></p>
+          <p className="font-bold text-zinc-900"><a href="mailto:support@puplume.pet" className="text-[#8B5E3C] hover:underline">support@puplume.pet</a></p>
         </div>
       </section>
     </article>

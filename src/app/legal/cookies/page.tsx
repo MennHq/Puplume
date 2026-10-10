@@ -33,7 +33,7 @@ export default function CookiePolicy() {
 
       <section className="mb-10">
         <h2 className="text-xl font-bold text-zinc-900 mb-4 tracking-tight">4. Contact Us</h2>
-        <p className="mb-4">If you have questions about our use of cookies, contact us at <strong>support@puplume.com</strong>.</p>
+        <p className="mb-4">If you have questions about our use of cookies, contact us at <strong>support@puplume.pet</strong>.</p>
       </section>
     </article>
   );

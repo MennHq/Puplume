@@ -358,7 +358,7 @@ export default function Home() {
               <Link href="/legal/terms" className="hover:text-[#8B5E3C] transition-colors">Terms of Service</Link>
               <Link href="/legal/refund" className="hover:text-[#8B5E3C] transition-colors">Refund Policy</Link>
               <Link href="/legal/cookies" className="hover:text-[#8B5E3C] transition-colors">Cookie Policy</Link>
-              <a href="mailto:support@puplume.com" className="hover:text-[#8B5E3C] transition-colors">Contact Support</a>
+              <a href="mailto:support@puplume.pet" className="hover:text-[#8B5E3C] transition-colors">Contact Support</a>
             </div>
           </div>
           <div className="text-center text-sm font-medium text-zinc-400">

@@ -44,7 +44,7 @@ export default function TermsOfService() {
 
       <section className="mb-10">
         <h2 className="text-xl font-bold text-zinc-900 mb-4 tracking-tight">5. Contact</h2>
-        <p className="mb-4">For questions regarding these Terms, please contact <strong>support@puplume.com</strong>.</p>
+        <p className="mb-4">For questions regarding these Terms, please contact <strong>support@puplume.pet</strong>.</p>
       </section>
     </article>
   );

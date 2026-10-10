@@ -31,7 +31,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
             </nav>
             
             <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-4 mt-10">Contact</h3>
-            <a href="mailto:support@puplume.com" className="px-4 py-2.5 rounded-lg text-sm font-bold text-zinc-600 hover:text-[#8B5E3C] hover:bg-[#FFF9F2] transition-all block">support@puplume.com</a>
+            <a href="mailto:support@puplume.pet" className="px-4 py-2.5 rounded-lg text-sm font-bold text-zinc-600 hover:text-[#8B5E3C] hover:bg-[#FFF9F2] transition-all block">support@puplume.pet</a>
           </div>
         </aside>
 

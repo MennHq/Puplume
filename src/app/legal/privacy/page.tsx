@@ -53,7 +53,7 @@ export default function PrivacyPolicy() {
           If you have any questions, concerns, or requests regarding your data and this Privacy Policy, please reach out to our privacy team at:
         </p>
         <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100 inline-block">
-          <p className="font-bold text-zinc-900">Email: <a href="mailto:support@puplume.com" className="text-[#8B5E3C] hover:underline">support@puplume.com</a></p>
+          <p className="font-bold text-zinc-900">Email: <a href="mailto:support@puplume.pet" className="text-[#8B5E3C] hover:underline">support@puplume.pet</a></p>
         </div>
       </section>
     </article>

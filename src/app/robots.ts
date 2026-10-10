@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
     },
-    sitemap: 'https://puplume.com/sitemap.xml',
+    sitemap: 'https://puplume.pet/sitemap.xml',
   }
 }

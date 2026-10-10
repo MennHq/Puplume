@@ -19,13 +19,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://puplume.com"),
+  metadataBase: new URL("https://puplume.pet"),
   title: "PupLume | Puppy Training App & Digital Organizer",
   description: "The ultimate intelligent companion for new dog parents. Track potty training, manage health records, and get AI-powered puppy training advice all in one app.",
   openGraph: {
     title: "PupLume | Puppy Training App & Digital Organizer",
     description: "The ultimate intelligent companion for new dog parents.",
-    url: "https://puplume.com",
+    url: "https://puplume.pet",
     siteName: "PupLume",
     images: [
       {

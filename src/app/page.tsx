@@ -35,9 +35,9 @@ export default function Home() {
             <PupLumeLogo variant="full" size="lg" />
           </div>
           <nav className="hidden md:flex gap-10 text-sm font-bold text-[#766A63]">
-            <a href="#features" className="hover:text-[#8B5E3C] hover:scale-105 transition-all">Features</a>
-            <a href="#academy" className="hover:text-[#8B5E3C] hover:scale-105 transition-all">Academy</a>
-            <a href="#health" className="hover:text-[#8B5E3C] hover:scale-105 transition-all">Health Center</a>
+            <a href="/features" className="hover:text-[#8B5E3C] hover:scale-105 transition-all">Features</a>
+            <a href="/academy" className="hover:text-[#8B5E3C] hover:scale-105 transition-all">Academy</a>
+            <a href="/health" className="hover:text-[#8B5E3C] hover:scale-105 transition-all">Health Center</a>
             <Link href="/pricing" className="hover:text-[#8B5E3C] hover:scale-105 transition-all">Pricing</Link>
           </nav>
           <div className="flex gap-4 items-center">
@@ -52,7 +52,7 @@ export default function Home() {
                     Log In
                   </a>
                   <a href="http://localhost:3000/?login=true" className="px-6 py-2.5 text-sm font-bold text-white bg-[#8B5E3C] rounded-full hover:bg-[#5F3E29] transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 active:scale-95">
-                    Start Free
+                    Sign Up for Free
                   </a>
                 </>
               )
@@ -102,9 +102,9 @@ export default function Home() {
                   ) : (
                     <>
                       <a href="http://localhost:3000/?login=true" className="font-[family-name:var(--font-brand)] w-full sm:w-auto px-8 py-4 text-lg font-bold text-white bg-[#8B5E3C] rounded-full hover:bg-[#5F3E29] transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-95 text-center">
-                        Get Started for Free
+                        Sign Up for Free for Free
                       </a>
-                      <a href="#features" className="font-[family-name:var(--font-brand)] w-full sm:w-auto px-8 py-4 text-lg font-bold text-[#8B5E3C] bg-white rounded-full hover:bg-[#F3E7DA] transition-all shadow-md active:scale-95 text-center">
+                      <a href="/features" className="font-[family-name:var(--font-brand)] w-full sm:w-auto px-8 py-4 text-lg font-bold text-[#8B5E3C] bg-white rounded-full hover:bg-[#F3E7DA] transition-all shadow-md active:scale-95 text-center">
                         See Features
                       </a>
                     </>

@@ -6,6 +6,7 @@ const grandstander = Grandstander({
   subsets: ["latin"],
 });
 import { ClientClerkProvider } from '../components/ClientClerkProvider';
+import { PostHogProvider } from '../components/PostHogProvider';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -91,7 +92,9 @@ export default function RootLayout({
               `,
             }}
           />
-          {children}
+          <PostHogProvider>
+            {children}
+          </PostHogProvider>
         </body>
       </html>
     </ClientClerkProvider>

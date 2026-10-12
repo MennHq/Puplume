@@ -30,9 +30,10 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
     posthog.init(posthogKey, {
       api_host: posthogHost,
-      person_profiles: 'identified_only',
-      capture_pageview: false, // Captured manually above via PostHogPageView
+      person_profiles: 'always',
+      capture_pageview: true,
       capture_pageleave: true,
+      autocapture: true,
     });
   }, []);
 
